@@ -1,0 +1,9 @@
+class_name: Solution
+method: twoSum
+params:
+  - name: nums
+    type: List[int]
+  - name: target
+    type: int
+return_type: List[int]
+compare: any_order

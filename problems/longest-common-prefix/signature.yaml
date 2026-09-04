@@ -1,0 +1,7 @@
+class_name: Solution
+method: longestCommonPrefix
+params:
+  - name: strs
+    type: List[str]
+return_type: str
+compare: exact

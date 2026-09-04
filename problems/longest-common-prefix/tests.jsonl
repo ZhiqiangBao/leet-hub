@@ -1,0 +1,4 @@
+{"args":[["flower","flow","flight"]],"expected":"fl","hidden":false}
+{"args":[["dog","racecar","car"]],"expected":"","hidden":false}
+{"args":[["a"]],"expected":"a","hidden":false}
+{"args":[["interspecies","interstellar","interstate"]],"expected":"inters","hidden":true}

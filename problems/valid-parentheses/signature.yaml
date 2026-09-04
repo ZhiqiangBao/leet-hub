@@ -1,0 +1,7 @@
+class_name: Solution
+method: isValid
+params:
+  - name: s
+    type: str
+return_type: bool
+compare: exact
