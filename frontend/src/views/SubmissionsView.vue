@@ -19,7 +19,7 @@
           <td>
             <router-link :to="`/problems/${s.problem_slug}`">{{ s.problem_slug }}</router-link>
           </td>
-          <td>{{ s.language }}</td>
+          <td>{{ languageLabel(s.language) }}</td>
           <td :class="(s.verdict || s.status).toLowerCase()">{{ s.verdict || s.status }}</td>
           <td>{{ s.time_ms ?? "—" }}</td>
           <td>{{ s.created_at }}</td>
@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { Submissions, type Submission } from "../api";
+import { languageLabel } from "../languages";
 
 const rows = ref<Submission[]>([]);
 

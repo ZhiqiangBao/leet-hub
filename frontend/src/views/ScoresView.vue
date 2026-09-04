@@ -17,7 +17,7 @@
           <td>
             <router-link :to="`/problems/${r.slug}`">{{ r.title }}</router-link>
           </td>
-          <td>{{ r.language }}</td>
+          <td>{{ languageLabel(r.language) }}</td>
           <td>{{ r.time_ms }} ms</td>
           <td>第 {{ r.rank }} / {{ r.total }} 名</td>
         </tr>
@@ -29,6 +29,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { Scores, type ScoreRow } from "../api";
+import { languageLabel } from "../languages";
 
 const rows = ref<ScoreRow[]>([]);
 

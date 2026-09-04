@@ -44,7 +44,7 @@
     <div class="filters">
       <input v-model="slug" placeholder="题目 slug" />
       <input v-model="username" placeholder="用户名" />
-      <input v-model="language" placeholder="语言 id，如 python3" />
+      <input v-model="language" placeholder="语言，如 C++20 / python3" />
       <button class="ghost" type="button" @click="loadSubs">筛选</button>
     </div>
     <table>
@@ -72,7 +72,7 @@
           <td>
             <router-link :to="`/problems/${s.problem_slug}`" @click.stop>{{ s.problem_slug }}</router-link>
           </td>
-          <td>{{ s.language }}</td>
+          <td>{{ languageLabel(s.language) }}</td>
           <td :class="(s.verdict || s.status).toLowerCase()">{{ s.verdict || s.status }}</td>
           <td>{{ s.time_ms ?? "—" }}</td>
           <td>{{ s.created_at }}</td>
@@ -89,6 +89,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { Admin, type AdminStats, type Submission } from "../api";
+import { languageLabel, languageQueryId } from "../languages";
 
 const stats = ref<AdminStats | null>(null);
 const rows = ref<Submission[]>([]);
@@ -113,7 +114,7 @@ async function loadSubs() {
   rows.value = await Admin.submissions({
     slug: slug.value.trim() || undefined,
     username: username.value.trim() || undefined,
-    language: language.value.trim() || undefined,
+    language: languageQueryId(language.value) || undefined,
   });
   openId.value = null;
   openSource.value = "";

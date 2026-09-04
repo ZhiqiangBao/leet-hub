@@ -66,7 +66,7 @@
       <div class="editor-bar">
         <select v-model="language">
           <option v-for="lang in languages" :key="lang.id" :value="lang.id" :disabled="!lang.available">
-            {{ lang.display_name }}{{ lang.available ? "" : lang.implemented ? "（未安装编译器）" : "（接口保留）" }}
+            {{ languageLabel(lang.id, lang.display_name) }}{{ lang.available ? "" : lang.implemented ? "（未安装编译器）" : "（接口保留）" }}
           </option>
         </select>
         <span class="draft-hint muted">{{ draftHint }}</span>
@@ -99,6 +99,7 @@ import {
   type Submission,
 } from "../api";
 import { tagLabel } from "../tags";
+import { languageLabel } from "../languages";
 
 const route = useRoute();
 const problem = ref<ProblemDetail | null>(null);
