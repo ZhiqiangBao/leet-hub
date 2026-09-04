@@ -1,0 +1,15 @@
+{
+	"agents": {
+		"builtin": {
+			"exploreModel": "qwen3.7-flash"
+		},
+		"modelGrades": {
+			"small": "qwen3.7-flash"
+		},
+		"allowedGrades": ["small"]
+	},
+	"mcp": {
+		"excluded": ["godot-ai", "blender"]
+	},
+	"$version": 4
+}

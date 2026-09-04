@@ -6,6 +6,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 data/
+desk/
+.qwen/tmp/
+.qwen/generated-images/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
