@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Install Local Leet on the Ubuntu judge host.
-# Judging uses this machine's system python3 and g++.
+# Judging uses this machine's system python3, gcc, and g++.
 
 if [[ "$(uname -s)" != "Linux" ]]; then
   echo "This setup script is for the Ubuntu server, not the development PC."

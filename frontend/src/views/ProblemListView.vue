@@ -1,7 +1,7 @@
 <template>
   <main class="page">
     <h1>题库</h1>
-    <p class="hint">判题在 Ubuntu 主机上执行，使用系统 python3 / g++。</p>
+    <p class="hint">判题在 Ubuntu 主机上执行，使用系统 python3 / gcc / g++。</p>
     <table>
       <thead>
         <tr>

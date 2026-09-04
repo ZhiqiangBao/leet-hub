@@ -1,12 +1,12 @@
 # 服务端操作
 
-服务端即**评测主机**：安装并运行本仓库的那台 Ubuntu。它提供网页、保存账号与提交、用本机 `/usr/bin/python3` 与 `/usr/bin/g++` 判题。GitHub 仓库名是 `leet-hub`；systemd 服务名是 `local-leet`。
+服务端即**评测主机**：安装并运行本仓库的那台 Ubuntu。它提供网页、保存账号与提交、用本机 `/usr/bin/python3`、`/usr/bin/gcc` 与 `/usr/bin/g++` 判题。GitHub 仓库名是 `leet-hub`；systemd 服务名是 `local-leet`。
 
 浏览器所在电脑不是服务端。客户端说明见 [client.md](client.md)。
 
 ## 首次部署
 
-依赖：Ubuntu、`python3`、`g++`、Node.js / npm（构建前端）。
+依赖：Ubuntu、`python3`、`gcc`、`g++`、Node.js / npm（构建前端）。
 
 ```bash
 git clone https://github.com/ZhiqiangBao/leet-hub.git
@@ -120,7 +120,7 @@ SQLite 与评测临时文件在仓库目录下的 `data/`，不纳入 Git。备�
 | 网站进程 | systemd `local-leet` |
 | 用户与提交 | `data/local-leet.db` |
 | 当前题库 | 本机 `problems/`（由 git 拉取或管理员写盘） |
-| 判题编译器 | 系统 `python3`、`g++` |
+| 判题编译器 | 系统 `python3`、`gcc`、`g++` |
 
 向 GitHub 推送题目在仓库维护端完成，服务端负责 `git pull` 后加载。说明见 [problems.md](problems.md)。
 

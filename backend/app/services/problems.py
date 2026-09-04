@@ -186,6 +186,7 @@ class ProblemBank:
 def _starter_ext(lang: str) -> str:
     return {
         "python3": ".py",
+        "c": ".c",
         "cpp17": ".cpp",
         "javascript": ".js",
         "go": ".go",

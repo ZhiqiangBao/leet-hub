@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..base import LanguageAdapter
+from .c11 import C11Adapter
 from .cpp17 import Cpp17Adapter
 from .python3 import Python3Adapter
 from .stubs import GoAdapter, JavascriptAdapter, RustAdapter, ZigAdapter
@@ -9,6 +10,7 @@ ADAPTERS: dict[str, LanguageAdapter] = {
     adapter.id: adapter
     for adapter in (
         Python3Adapter(),
+        C11Adapter(),
         Cpp17Adapter(),
         JavascriptAdapter(),
         GoAdapter(),

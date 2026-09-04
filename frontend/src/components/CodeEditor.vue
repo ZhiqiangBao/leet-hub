@@ -24,6 +24,7 @@ let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 
 const monacoLang: Record<string, string> = {
   python3: "python",
+  c: "c",
   cpp17: "cpp",
   javascript: "javascript",
   go: "go",
@@ -31,8 +32,54 @@ const monacoLang: Record<string, string> = {
   zig: "plaintext",
 };
 
+function configurePythonIndent() {
+  monaco.languages.setLanguageConfiguration("python", {
+    comments: {
+      lineComment: "#",
+      blockComment: ["'''", "'''"],
+    },
+    brackets: [
+      ["{", "}"],
+      ["[", "]"],
+      ["(", ")"],
+    ],
+    autoClosingPairs: [
+      { open: "{", close: "}" },
+      { open: "[", close: "]" },
+      { open: "(", close: ")" },
+      { open: '"', close: '"', notIn: ["string"] },
+      { open: "'", close: "'", notIn: ["string", "comment"] },
+    ],
+    surroundingPairs: [
+      { open: "{", close: "}" },
+      { open: "[", close: "]" },
+      { open: "(", close: ")" },
+      { open: '"', close: '"' },
+      { open: "'", close: "'" },
+    ],
+    onEnterRules: [
+      {
+        beforeText:
+          /^\s*(?:def|class|for|if|elif|else|while|try|with|finally|except|async|match|case).*?:\s*(?:#.*)?$/,
+        action: { indentAction: monaco.languages.IndentAction.Indent },
+      },
+      {
+        beforeText: /^\s*(?:break|continue|raise|return|pass)\b.*$/,
+        action: { indentAction: monaco.languages.IndentAction.Outdent },
+      },
+    ],
+    indentationRules: {
+      increaseIndentPattern:
+        /^\s*(?:class|def|elif|else|except|finally|for|if|try|with|while|async\s+(?:def|for|with)|match|case)\b.*:\s*(?:#.*)?$/,
+      decreaseIndentPattern: /^\s*(?:elif|else|except|finally)\b.*/,
+    },
+    folding: { offSide: true },
+  });
+}
+
 onMounted(() => {
   if (!root.value) return;
+  configurePythonIndent();
   editor = monaco.editor.create(root.value, {
     value: props.modelValue,
     language: monacoLang[props.language] || "plaintext",
@@ -42,6 +89,9 @@ onMounted(() => {
     fontSize: 14,
     scrollBeyondLastLine: false,
     tabSize: 4,
+    insertSpaces: true,
+    detectIndentation: false,
+    autoIndent: "full",
   });
   editor.onDidChangeModelContent(() => {
     emit("update:modelValue", editor?.getValue() || "");

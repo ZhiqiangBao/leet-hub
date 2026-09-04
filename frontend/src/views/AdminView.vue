@@ -45,6 +45,7 @@ const createJson = ref(`{
   },
   "starter": {
     "python3": "class Solution:\\n    def plusOne(self, digits: list[int]) -> list[int]:\\n        \\n",
+    "c": "/**\\n * Note: The returned array must be malloced, assume caller calls free().\\n */\\nint* plusOne(int* digits, int digitsSize, int* returnSize) {\\n    \\n}\\n",
     "cpp17": "class Solution {\\npublic:\\n    vector<int> plusOne(vector<int>& digits) {\\n        \\n    }\\n};\\n"
   },
   "tests": [

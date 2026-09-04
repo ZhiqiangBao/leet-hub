@@ -47,6 +47,34 @@ public:
 };
 '''
 
+AC_C = r'''
+int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+    for (int i = 0; i < numsSize; i++) {
+        for (int j = i + 1; j < numsSize; j++) {
+            if (nums[i] + nums[j] == target) {
+                int* out = (int*)malloc(sizeof(int) * 2);
+                out[0] = i;
+                out[1] = j;
+                *returnSize = 2;
+                return out;
+            }
+        }
+    }
+    *returnSize = 0;
+    return NULL;
+}
+'''
+
+WA_C = r'''
+int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+    int* out = (int*)malloc(sizeof(int) * 2);
+    out[0] = 0;
+    out[1] = 0;
+    *returnSize = 2;
+    return out;
+}
+'''
+
 
 def expect(name: str, result: dict, verdict: str) -> None:
     got = result.get("verdict")
@@ -76,6 +104,14 @@ def main() -> None:
         expect("cpp AC", judge_source("two-sum", "cpp17", AC_CPP), "AC")
     else:
         print("[SKIP] cpp17 not available here; Ubuntu host with g++ will run C++ judging")
+
+    clang = next(x for x in language_status() if x["id"] == "c")
+    if clang["available"]:
+        expect("c AC", judge_source("two-sum", "c", AC_C), "AC")
+        expect("c WA", judge_source("two-sum", "c", WA_C), "WA")
+        expect("c CE", judge_source("two-sum", "c", "int* twoSum("), "CE")
+    else:
+        print("[SKIP] c not available here; Ubuntu host with gcc will run C judging")
 
     print("selftest passed")
 

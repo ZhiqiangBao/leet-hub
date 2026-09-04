@@ -4,7 +4,7 @@
 
 仓库：https://github.com/ZhiqiangBao/leet-hub
 
-判题使用 Ubuntu 系统自带的 `/usr/bin/python3` 与 `/usr/bin/g++`。局域网内其他设备用浏览器访问 `http://<Ubuntu局域网IP>:8080`。答题端无需安装编译器。
+判题使用 Ubuntu 系统自带的 `/usr/bin/python3`、`/usr/bin/gcc` 与 `/usr/bin/g++`。局域网内其他设备用浏览器访问 `http://<Ubuntu局域网IP>:8080`。答题端无需安装编译器。
 
 JavaScript、Go、Rust、Zig 已预留适配器，实现步骤见文档。
 

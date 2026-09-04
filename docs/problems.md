@@ -23,6 +23,7 @@ problems/<slug>/
   tests.jsonl
   starter/
     python3.py
+    c.c
     cpp17.cpp
     javascript.js    # 可选；该语言未实现评测时仅为占位
     go.go
@@ -37,6 +38,7 @@ problems/<slug>/
 | `signature.yaml` | 是 | 类名、方法名、参数、返回类型、比较方式 |
 | `tests.jsonl` | 是 | 测试集，一行一个 JSON |
 | `starter/python3.py` | 建议 | 打开题目时 Python 编辑器的初始代码 |
+| `starter/c.c` | 建议 | C 初始代码（力扣式自由函数） |
 | `starter/cpp17.cpp` | 建议 | C++ 初始代码 |
 
 ## meta.yaml
@@ -77,7 +79,8 @@ return_type: List[int]
 compare: any_order
 ```
 
-- Python / C++：用户实现 `class Solution`（C++ 为 `class Solution`）中的方法，方法名与 `method` 一致。
+- Python / C++：用户实现 `class Solution` 中的方法，方法名与 `method` 一致。
+- C：力扣式自由函数，无 `class Solution`。`List[int]` 参数展开为指针加长度（`int* nums, int numsSize`）；返回 `List[int]` 时再加 `int* returnSize`，返回值须 `malloc`。`str` 为 `char*`，`List[str]` 为 `char**` 加长度，`bool` 为 `bool`。
 - `params` 顺序必须与 `tests.jsonl` 里 `args` 的顺序一致。
 - `compare`：`exact` 表示按结构逐位比较；`any_order` 表示顶层列表元素顺序无关（如下标数组）。
 
@@ -102,7 +105,7 @@ compare: any_order
 
 ## starter
 
-与力扣相同：只给出类/函数签名，函数体留空，不要写 `return {}`、`return false` 等占位返回值。Python 空缩进块是语法错误，力扣编辑器里用户会立刻填写；本站提交空 starter 得到 `CE` 即可，评测机没有额外开销。C++ 非 void 函数空函数体与力扣一致，未写 `return` 时为 `CE` 或运行期未定义行为，按编译器输出判定。
+与力扣相同：只给出类/函数签名，函数体留空，不要写 `return {}`、`return false` 等占位返回值。Python 空缩进块是语法错误，力扣编辑器里用户会立刻填写；本站提交空 starter 得到 `CE` 即可，评测机没有额外开销。C / C++ 非 void 函数空函数体与力扣一致，未写 `return` 时为 `CE` 或运行期未定义行为，按编译器输出判定。
 
 不要在用户代码里定义 `main`，否则与驱动中的 `main` 冲突，结果为 `CE`。
 
@@ -112,6 +115,17 @@ Python：
 class Solution:
     def twoSum(self, nums: list[int], target: int) -> list[int]:
         
+```
+
+C（驱动已包含 `json.h`，其中有 `stdbool.h` / `stdlib.h`）：
+
+```c
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
+int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
+    
+}
 ```
 
 C++（驱动已包含 `<bits/stdc++.h>` 与 `using namespace std;`）：

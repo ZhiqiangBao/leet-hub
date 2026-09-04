@@ -68,9 +68,12 @@ def wrap_cpp(user_code: str, signature: dict) -> str:
     return_type = signature["return_type"]
     types = [p["type"] for p in params] + [return_type]
     converters = emit_converters(types)
-    call_args = ", ".join(
-        f'{conv_name(p["type"])}(args[{i}])' for i, p in enumerate(params)
-    )
+    bind_lines = [
+        f"            auto arg{i} = {conv_name(p['type'])}(args[{i}]);"
+        for i, p in enumerate(params)
+    ]
+    bind = "\n".join(bind_lines) if bind_lines else ""
+    call_args = ", ".join(f"arg{i}" for i in range(len(params)))
     any_order = "true" if compare == "any_order" else "false"
     return f'''#include <bits/stdc++.h>
 #include "mini_json.hpp"
@@ -95,6 +98,7 @@ int main() {{
         JsonValue args = root["args"];
         JsonValue expected = root["expected"];
         try {{
+{bind}
             auto got = sol.{method}({call_args});
             JsonValue gotj = to_json_val(got);
             if (!json_equal(gotj, expected, {any_order})) {{
@@ -133,7 +137,7 @@ int main() {{
 
 class Cpp17Adapter(LanguageAdapter):
     id = "cpp17"
-    display_name = "C++17"
+    display_name = "C++20"
     source_filename = "solution.cpp"
     implemented = True
 
@@ -156,7 +160,7 @@ class Cpp17Adapter(LanguageAdapter):
             return CompileResult(ok=False, log="g++ not found")
         shutil.copy2(JSON_HEADER, Path(workdir) / "mini_json.hpp")
         result = run_limited(
-            [compiler, "-O2", "-std=c++17", "-pipe", "-o", "program", self.source_filename],
+            [compiler, "-O2", "-std=c++20", "-pipe", "-o", "program", self.source_filename],
             cwd=Path(workdir),
             stdin="",
             time_ms=30000,

@@ -7,7 +7,7 @@
 3. `run_limited(run_argv(workdir), stdin=tests.jsonl, …)` → 解析 stdout 最后一行 JSON
 
 基类：[`backend/app/judge/base.py`](../backend/app/judge/base.py)。  
-已实现：[`python3.py`](../backend/app/judge/languages/python3.py)、[`cpp17.py`](../backend/app/judge/languages/cpp17.py)。  
+已实现：[`python3.py`](../backend/app/judge/languages/python3.py)、[`c11.py`](../backend/app/judge/languages/c11.py)、[`cpp17.py`](../backend/app/judge/languages/cpp17.py)。  
 桩：[`stubs.py`](../backend/app/judge/languages/stubs.py)（`javascript` / `go` / `rust` / `zig`）。
 
 工具链装在评测主机；适配器代码进 Git 后由主机拉取。见 [server.md](server.md)。题目格式见 [problems.md](problems.md)。
@@ -52,7 +52,7 @@ class LanguageAdapter:
 3. 按 `compare` 比较返回值与 `expected`。
 4. 向 **stdout** 打印 **一行** JSON（引擎取 stdout 中最后一行合法 JSON 对象）。
 
-用户代码里不要依赖 `main`（C++ 驱动自带 `main`）。不要在驱动里访问网络。
+用户代码里不要依赖 `main`（C / C++ 驱动自带 `main`）。不要在驱动里访问网络。
 
 ## 驱动输出
 
@@ -71,7 +71,7 @@ class LanguageAdapter:
 - **解释型**（Python、Node）：`compile` 可语法检查或返回 `CompileResult(ok=True)`；`run_argv` 为解释器命令，cwd 为 `workdir`。
 - **编译型**：在 `workdir` 调编译器，产物名固定（如 `program`）。失败时 `CompileResult(ok=False, log=编译器输出)`。
 - 编译请使用 `run_limited(..., for_compile=True)`，避免桌面用户进程数限制导致 `g++` 起不来 `cc1plus`。运行用户程序不要设 `for_compile`。
-- 评测无外网。禁止 `cargo add`、`go get`、`npm install`。JSON 用标准库，或把单文件解析器 `copy` 进 `workdir`（C++ 的 `mini_json.hpp`）。
+- 评测无外网。禁止 `cargo add`、`go get`、`npm install`。JSON 用标准库，或把单文件解析器 `copy` 进 `workdir`（C 的 `json.h`、C++ 的 `mini_json.hpp`）。
 
 ## 登记清单
 
@@ -86,7 +86,8 @@ class LanguageAdapter:
 ## 各语言要点
 
 对照 Python：用户 `class Solution`，驱动拼接在同一文件末尾，`python3 -I solution.py`。  
-对照 C++：`#include <bits/stdc++.h>` 与 JSON 头，用户 `class Solution`，生成 `main` 调方法；`g++ -O2 -std=c++17`。
+对照 C：力扣式自由函数（无 `class Solution`），`List[int]` 展开为 `int* nums, int numsSize`，返回数组时再加 `int* returnSize`；`gcc -O2 -std=gnu11`，语言 id 为 `c`，starter 为 `starter/c.c`。  
+对照 C++：`#include <bits/stdc++.h>` 与 JSON 头，用户 `class Solution`，生成 `main` 调方法；`g++ -O2 -std=c++20`（含 `std::ranges`）。语言 id 仍为 `cpp17`，与 `starter/cpp17.cpp` 文件名一致。
 
 ### JavaScript（`javascript`）
 
