@@ -8,6 +8,28 @@
 
 JavaScript、Go、Rust、Zig 保留语言适配器接口；未实现评测前，界面显示为接口保留。
 
+## 角色与权限
+
+系统只有一台**评测主机**（Ubuntu）。其余设备都是**浏览器端**：打开网页、登录、做题。账号、题库、评测结果都存在 Ubuntu 上，不存在浏览器所在的那台电脑上。
+
+现在用 Windows 打开 `http://<Ubuntu的IP>:8080` 并注册，注册的是 Ubuntu 上的账号。若当时数据库里还没有用户，该账号即为管理员。此后在 Ubuntu 自带浏览器打开 `http://127.0.0.1:8080`，用同一用户名和密码登录，仍是同一个管理员，不是两套账号。
+
+| | 评测主机（Ubuntu） | 浏览器端（Windows / 手机 / 另一台电脑） |
+| --- | --- | --- |
+| 作用 | 跑网站、存用户和提交、用本机 `python3`/`g++` 判题、存放 `problems/` | 打开网页：注册、登录、读题、写代码、提交 |
+| 账号存在哪 | `data/` 里的 SQLite | 不保存账号；浏览器只持有登录会话 |
+| 谁算管理员 | 记在 Ubuntu 数据库里的 `is_admin` | 无独立管理员；顶栏「管理」只是在遥控 Ubuntu |
+| 做题 | 本机浏览器访问 8080 同样可以做题 | 任意设备访问 Ubuntu 的 8080 即可 |
+| 网页「管理」加题 | 管理员登录后可写本机 `problems/` | 管理员在任意浏览器登录后，请求发到 Ubuntu，同样写 Ubuntu 的 `problems/` |
+| GitHub 加题 | `git pull` 后重载或重启，新题生效 | 向本仓库推送 `problems/`（需 GitHub 写权限，与网页管理员不是同一套权限） |
+
+网页管理员与 GitHub 写权限相互独立：
+
+- **网页管理员**：第一个注册用户，或环境变量 `LOCAL_LEET_ADMINS` 中的用户名。用于在网站上改 Ubuntu 磁盘上的题库。
+- **GitHub 写权限**：能向 https://github.com/ZhiqiangBao/leet-hub 推送的人。日常出题走这条路径：改 `problems/` → `git push` → Ubuntu 上执行 `./scripts/update-from-github.sh`。
+
+两台机器都可以「加题」，含义不同：浏览器端点「管理」是在改 Ubuntu 本地文件；在开发机改仓库并推送，是改 GitHub，再由 Ubuntu 拉取。不要两套同时改同一题，以免冲突。
+
 ## 部署（Ubuntu 主机）
 
 依赖：Ubuntu、`python3`、`g++`、Node.js / npm（用于构建前端）。
@@ -35,7 +57,7 @@ http://<Ubuntu局域网IP>:8080
 ./scripts/run-ubuntu.sh
 ```
 
-第一个注册的用户为管理员。也可通过环境变量指定：
+第一个在该评测主机上注册的用户为管理员（账号写在 Ubuntu 的数据库中，与从哪台电脑打开网页无关）。也可通过环境变量指定：
 
 ```bash
 export LOCAL_LEET_ADMINS=alice,bob
