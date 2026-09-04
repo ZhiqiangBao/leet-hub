@@ -57,7 +57,7 @@ tags:
 - `difficulty`：`easy`、`medium` 或 `hard`。
 - `time_limit_ms`：用户程序运行时限（毫秒），建议 1000–5000。
 - `memory_limit_mb`：运行内存上限（MB）。编译阶段不使用此值。
-- `tags`：字符串列表，仅展示用。
+- `tags`：小写英文 id，1～3 个。题库页按知识点筛选；中文名在 `frontend/src/tags.ts`。
 
 ## statement.md
 
