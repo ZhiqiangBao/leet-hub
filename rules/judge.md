@@ -1,6 +1,6 @@
 # R4 · 评测约束
 
-**读的人**：`author`、`tests`、`proof`。
+**读的人**：`author`、`solver`、`quality`。
 
 ## 语言
 
@@ -10,13 +10,23 @@ JS / Go / Rust / Zig 为桩，提交 `NA`。
 
 ## 类型
 
-`int`、`float`、`bool`、`str`、`List[int]`、`List[str]`。不要用 `List[List[int]]`（C 不支持）。
+`int`、`long`、`float`、`bool`、`str`、`List[int]`、`List[long]`、`List[str]`。不要用 `List[List[int]]`（C 不支持）。yaml 写 `long`，不要写 `long long` / `int64`。
 
-C：`List[int]` 参数 → `int* name, int nameSize`；返回 `List[int]` → 另加 `int* returnSize`，`malloc`。`str` → `char*`。`bool` → `bool`。
+| yaml | Python 注解 | C | C++ |
+|---|---|---|---|
+| `int` | `int` | `int` | `int` |
+| `long` | `int` | `long long` | `long long` |
+| `List[long]` | `list[int]` | `long long* name, int nameSize` | `vector<long long>` |
+
+C：`List[int]` / `List[long]` 参数 → 指针加长度；返回数组 → 另加 `int* returnSize`，`malloc`。`str` → `char*`。`bool` → `bool`。
 
 ## 整数
 
-测例与答案中的 `int` / `List[int]` 在 `[−2^{31}, 2^{31}−1]`。
+**默认 `int`，绝大多数题走 int32** `[−2^{31}, 2^{31}−1]`。不要每题都用 `long`。
+
+仅当某个返回值或参数的闭式上界会超 `2^{31}−1`、且需要保留该规模时，**只把那个字段**改成 `long`（`[−2^{63}, 2^{63}−1]`）。能收窄约束仍进 int32 的，优先收窄，不要升位宽。
+
+定约束前先估算上界。题面写清范围。不要写「请用能容纳的整型」却不改签名。选题时算清：收窄会不会把 `n` 锁死到没法考复杂度。
 
 ## 行长度
 

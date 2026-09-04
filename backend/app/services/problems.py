@@ -11,7 +11,7 @@ from ..config import PROBLEMS_DIR
 from ..schemas import ParamSpec, Signature, TestCase
 
 _SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-SUPPORTED_TYPES = {"int", "float", "bool", "str"}
+SUPPORTED_TYPES = {"int", "long", "float", "bool", "str"}
 
 
 class ProblemError(ValueError):

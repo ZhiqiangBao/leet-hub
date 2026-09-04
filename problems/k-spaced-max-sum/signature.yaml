@@ -1,0 +1,8 @@
+class_name: Solution
+method: maximumSum
+params:
+  - name: a
+    type: List[int]
+  - name: k
+    type: int
+return_type: int

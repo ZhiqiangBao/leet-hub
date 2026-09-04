@@ -34,7 +34,9 @@ def _canon(value):
 def _close(a, b):
     if isinstance(a, bool) or isinstance(b, bool):
         return a is b if isinstance(a, bool) and isinstance(b, bool) else False
-    if isinstance(a, (int, float)) and isinstance(b, (int, float)) and not isinstance(a, bool) and not isinstance(b, bool):
+    if isinstance(a, int) and isinstance(b, int):
+        return a == b
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
         return math.isclose(float(a), float(b), rel_tol=1e-6, abs_tol=1e-6)
     if isinstance(a, list) and isinstance(b, list):
         if len(a) != len(b):

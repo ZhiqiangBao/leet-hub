@@ -80,11 +80,11 @@ compare: any_order
 ```
 
 - Python / C++：用户实现 `class Solution` 中的方法，方法名与 `method` 一致。
-- C：力扣式自由函数，无 `class Solution`。`List[int]` 参数展开为指针加长度（`int* nums, int numsSize`）；返回 `List[int]` 时再加 `int* returnSize`，返回值须 `malloc`。`str` 为 `char*`，`List[str]` 为 `char**` 加长度，`bool` 为 `bool`。
+- C：力扣式自由函数，无 `class Solution`。`List[int]` / `List[long]` 参数展开为指针加长度（`int* nums, int numsSize` 或 `long long*`）；返回数组时再加 `int* returnSize`，返回值须 `malloc`。`str` 为 `char*`，`List[str]` 为 `char**` 加长度，`bool` 为 `bool`。yaml `long` 在 C/C++ 为 `long long`，Python 注解仍为 `int`。
 - `params` 顺序必须与 `tests.jsonl` 里 `args` 的顺序一致。
 - `compare`：`exact` 表示按结构逐位比较；`any_order` 表示顶层列表元素顺序无关（如下标数组）。
 
-支持的 `type`：`int`、`float`、`bool`、`str`、以及嵌套的 `List[T]`（如 `List[int]`、`List[str]`、`List[List[int]]`）。链表、二叉树尚未支持。
+支持的 `type`：`int`、`long`、`float`、`bool`、`str`、以及嵌套的 `List[T]`（如 `List[int]`、`List[long]`、`List[str]`）。默认用 `int`；仅答案或参数会超 32 位有符号整数时用 `long`。C 不支持 `List[List[int]]`。链表、二叉树尚未支持。
 
 ## tests.jsonl
 

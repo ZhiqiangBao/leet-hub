@@ -1,6 +1,6 @@
 # R2 · 题目文件
 
-**读的人**：`author`。
+**读的人**：`author`、`quality`。
 
 ## 目录
 
@@ -24,7 +24,23 @@ problems/<slug>/
 
 ## statement.md
 
-题意、参数、返回值、2～3 个示例、约束。不要要求从标准输入读入。
+首行必须是 `# <中文标题>`（与 `meta.yaml` 的 `title` 一致）。题意、参数、返回值、2～3 个示例、约束。不要要求从标准输入读入。不要把参考解或 `def solve` 写进题面。
+
+### 示例区排版（机检契约）
+
+`statement.py` 用 `输入[:：]\s*(.*?)\s*输出[:：]\s*([^\n]+)` 取期望值。排版不对时会报 `ref_example_mismatch`（看起来像 ref 算错，其实是期望值没被读到）。每个示例必须写成：
+
+**示例 1**
+
+```
+输入：s = "aabbccc", k = 2
+输出：2
+解释：……一行纯文本……
+```
+
+- `输入：` / `输出：` / `解释：` 各占一行，全角冒号，值紧跟冒号同一行；
+- 这三行不得包在 `**…**` 里，不得用反引号包裹值，不得把值单独放到下一行或代码围栏里；
+- 题面其他区域可用 LaTeX；只有示例代码围栏内要求纯文本。
 
 ## signature.yaml
 
@@ -38,7 +54,7 @@ return_type: <类型>
 compare: exact   # 下标集合无序时用 any_order
 ```
 
-`params` 顺序与 `tests.jsonl` 的 `args` 一致。类型见 R4。
+`params` 顺序与 `tests.jsonl` 的 `args` 一致。类型见 R4。默认 `int`；只有会超 int32 的字段才写成 `long`。
 
 ## starter
 
@@ -52,7 +68,7 @@ class Solution:
         
 ```
 
-C（`List[int]` 参数展开为指针加长度；返回 `List[int]` 时加 `int* returnSize`，返回值 `malloc`）：
+C（`List[int]` / `List[long]` 参数展开为指针加长度；返回数组时加 `int* returnSize`，返回值 `malloc`。yaml `long` → `long long`）：
 
 ```c
 int method(...) {

@@ -1,0 +1,6 @@
+slug: anagram-window-pairs
+title: 异序窗口对
+difficulty: easy
+time_limit_ms: 1000
+memory_limit_mb: 256
+tags: [hash, string, sliding-window]

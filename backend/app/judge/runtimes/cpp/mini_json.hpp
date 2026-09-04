@@ -17,7 +17,9 @@ public:
 
     Type type = NIL;
     bool b = false;
+    bool is_int = false;
     double n = 0;
+    long long i = 0;
     std::string s;
     std::vector<JsonValue> a;
     std::map<std::string, JsonValue> o;
@@ -33,6 +35,14 @@ public:
         JsonValue j;
         j.type = NUM;
         j.n = v;
+        return j;
+    }
+    static JsonValue from_long(long long v) {
+        JsonValue j;
+        j.type = NUM;
+        j.is_int = true;
+        j.i = v;
+        j.n = static_cast<double>(v);
         return j;
     }
     static JsonValue from_str(const std::string& v) {
@@ -53,7 +63,13 @@ public:
     }
     int as_int() const {
         if (type != NUM) throw std::runtime_error("json: expected number");
+        if (is_int) return static_cast<int>(i);
         return static_cast<int>(n);
+    }
+    long long as_long() const {
+        if (type != NUM) throw std::runtime_error("json: expected number");
+        if (is_int) return i;
+        return static_cast<long long>(n);
     }
     double as_double() const {
         if (type != NUM) throw std::runtime_error("json: expected number");
@@ -103,7 +119,9 @@ private:
                 out << (b ? "true" : "false");
                 break;
             case NUM:
-                if (std::floor(n) == n && std::abs(n) < 1e15) {
+                if (is_int) {
+                    out << i;
+                } else if (std::floor(n) == n && std::abs(n) < 1e15) {
                     out << static_cast<long long>(n);
                 } else {
                     out << n;
@@ -205,18 +223,29 @@ private:
 
     static JsonValue parse_number(const std::string& t, size_t& i) {
         size_t start = i;
+        bool is_int = true;
         if (t[i] == '-') ++i;
         while (i < t.size() && std::isdigit(static_cast<unsigned char>(t[i]))) ++i;
         if (i < t.size() && t[i] == '.') {
+            is_int = false;
             ++i;
             while (i < t.size() && std::isdigit(static_cast<unsigned char>(t[i]))) ++i;
         }
         if (i < t.size() && (t[i] == 'e' || t[i] == 'E')) {
+            is_int = false;
             ++i;
             if (i < t.size() && (t[i] == '+' || t[i] == '-')) ++i;
             while (i < t.size() && std::isdigit(static_cast<unsigned char>(t[i]))) ++i;
         }
-        return JsonValue::from_num(std::stod(t.substr(start, i - start)));
+        std::string tok = t.substr(start, i - start);
+        if (is_int) {
+            try {
+                return JsonValue::from_long(std::stoll(tok));
+            } catch (...) {
+                return JsonValue::from_num(std::stod(tok));
+            }
+        }
+        return JsonValue::from_num(std::stod(tok));
     }
 
     static JsonValue parse_array(const std::string& t, size_t& i) {
@@ -282,6 +311,7 @@ inline bool json_equal(const JsonValue& a, const JsonValue& b, bool any_order) {
         case JsonValue::BOOL:
             return a.b == b.b;
         case JsonValue::NUM:
+            if (a.is_int && b.is_int) return a.i == b.i;
             return std::fabs(a.n - b.n) <= 1e-6;
         case JsonValue::STR:
             return a.s == b.s;
@@ -312,8 +342,8 @@ inline bool json_equal(const JsonValue& a, const JsonValue& b, bool any_order) {
     return false;
 }
 
-inline JsonValue to_json_val(int v) { return JsonValue::from_num(v); }
-inline JsonValue to_json_val(long long v) { return JsonValue::from_num(static_cast<double>(v)); }
+inline JsonValue to_json_val(int v) { return JsonValue::from_long(v); }
+inline JsonValue to_json_val(long long v) { return JsonValue::from_long(v); }
 inline JsonValue to_json_val(double v) { return JsonValue::from_num(v); }
 inline JsonValue to_json_val(bool v) { return JsonValue::from_bool(v); }
 inline JsonValue to_json_val(const std::string& v) { return JsonValue::from_str(v); }

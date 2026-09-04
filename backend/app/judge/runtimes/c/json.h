@@ -2,6 +2,7 @@
 #define LOCAL_LEET_JSON_H
 
 #include <ctype.h>
+#include <errno.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -14,7 +15,9 @@ typedef struct JsonValue JsonValue;
 struct JsonValue {
     JType type;
     bool b;
+    bool is_int;
     double n;
+    long long i;
     char *s;
     JsonValue *a;
     int alen;
@@ -96,11 +99,40 @@ static char *parse_string(const char *t, int *i) {
     return out;
 }
 
+static JsonValue json_from_long(long long n) {
+    JsonValue v = json_null();
+    v.type = J_NUM;
+    v.is_int = true;
+    v.i = n;
+    v.n = (double)n;
+    return v;
+}
+
 static JsonValue parse_number(const char *t, int *i) {
-    char *end = NULL;
-    double n = strtod(t + *i, &end);
-    *i = (int)(end - t);
-    return json_num(n);
+    int start = *i;
+    int is_int = 1;
+    if (t[*i] == '-') (*i)++;
+    if (!isdigit((unsigned char)t[*i])) {
+        json_die("json: invalid number");
+    }
+    while (t[*i] && isdigit((unsigned char)t[*i])) (*i)++;
+    if (t[*i] == '.') {
+        is_int = 0;
+        (*i)++;
+        while (t[*i] && isdigit((unsigned char)t[*i])) (*i)++;
+    }
+    if (t[*i] == 'e' || t[*i] == 'E') {
+        is_int = 0;
+        (*i)++;
+        if (t[*i] == '+' || t[*i] == '-') (*i)++;
+        while (t[*i] && isdigit((unsigned char)t[*i])) (*i)++;
+    }
+    if (is_int) {
+        errno = 0;
+        long long v = strtoll(t + start, NULL, 10);
+        if (errno != ERANGE) return json_from_long(v);
+    }
+    return json_num(strtod(t + start, NULL));
 }
 
 static JsonValue parse_array(const char *t, int *i) {
@@ -205,9 +237,14 @@ static const JsonValue *json_at(const JsonValue *v, int i) {
     return &v->a[i];
 }
 
-static int json_as_int(const JsonValue *v) {
+static long long json_as_long(const JsonValue *v) {
     if (v->type != J_NUM) json_die("json: expected number");
-    return (int)v->n;
+    if (v->is_int) return v->i;
+    return (long long)v->n;
+}
+
+static int json_as_int(const JsonValue *v) {
+    return (int)json_as_long(v);
 }
 
 static double json_as_double(const JsonValue *v) {
@@ -233,6 +270,14 @@ static int *json_as_int_array(const JsonValue *v, int *n) {
     return p;
 }
 
+static long long *json_as_long_array(const JsonValue *v, int *n) {
+    if (v->type != J_ARR) json_die("json: expected array");
+    *n = v->alen;
+    long long *p = (long long *)malloc(sizeof(long long) * (*n == 0 ? 1 : *n));
+    for (int i = 0; i < *n; i++) p[i] = json_as_long(&v->a[i]);
+    return p;
+}
+
 static char **json_as_str_array(const JsonValue *v, int *n) {
     if (v->type != J_ARR) json_die("json: expected array");
     *n = v->alen;
@@ -252,7 +297,9 @@ static void json_write(const JsonValue *v, FILE *out) {
             fputs(v->b ? "true" : "false", out);
             break;
         case J_NUM:
-            if (floor(v->n) == v->n && fabs(v->n) < 1e15)
+            if (v->is_int)
+                fprintf(out, "%lld", v->i);
+            else if (floor(v->n) == v->n && fabs(v->n) < 1e15)
                 fprintf(out, "%lld", (long long)v->n);
             else
                 fprintf(out, "%.10g", v->n);
@@ -314,6 +361,7 @@ static bool json_equal(const JsonValue *a, const JsonValue *b, bool any_order) {
         case J_BOOL:
             return a->b == b->b;
         case J_NUM:
+            if (a->is_int && b->is_int) return a->i == b->i;
             return fabs(a->n - b->n) <= 1e-6;
         case J_STR:
             return strcmp(a->s ? a->s : "", b->s ? b->s : "") == 0;
@@ -355,7 +403,7 @@ static bool json_equal(const JsonValue *a, const JsonValue *b, bool any_order) {
     return false;
 }
 
-static JsonValue json_from_int(int n) { return json_num((double)n); }
+static JsonValue json_from_int(int n) { return json_from_long((long long)n); }
 static JsonValue json_from_bool(bool b) { return json_bool(b); }
 static JsonValue json_from_cstr(const char *s) { return json_str(s ? s : ""); }
 
@@ -364,6 +412,14 @@ static JsonValue json_from_int_array(const int *p, int n) {
     arr.alen = (n < 0 || p == NULL) ? 0 : n;
     arr.a = (JsonValue *)malloc(sizeof(JsonValue) * (arr.alen == 0 ? 1 : arr.alen));
     for (int i = 0; i < arr.alen; i++) arr.a[i] = json_from_int(p[i]);
+    return arr;
+}
+
+static JsonValue json_from_long_array(const long long *p, int n) {
+    JsonValue arr = json_arr();
+    arr.alen = (n < 0 || p == NULL) ? 0 : n;
+    arr.a = (JsonValue *)malloc(sizeof(JsonValue) * (arr.alen == 0 ? 1 : arr.alen));
+    for (int i = 0; i < arr.alen; i++) arr.a[i] = json_from_long(p[i]);
     return arr;
 }
 

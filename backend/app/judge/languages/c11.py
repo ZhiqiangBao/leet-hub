@@ -18,6 +18,9 @@ def _emit_arg(index: int, type_name: str, name: str) -> tuple[list[str], list[st
     if type_name == "int":
         lines.append(f"        int {name} = json_as_int({src});")
         call.append(name)
+    elif type_name == "long":
+        lines.append(f"        long long {name} = json_as_long({src});")
+        call.append(name)
     elif type_name == "float":
         lines.append(f"        double {name} = json_as_double({src});")
         call.append(name)
@@ -30,6 +33,10 @@ def _emit_arg(index: int, type_name: str, name: str) -> tuple[list[str], list[st
     elif type_name == "List[int]":
         lines.append(f"        int {name}Size = 0;")
         lines.append(f"        int* {name} = json_as_int_array({src}, &{name}Size);")
+        call.extend([name, f"{name}Size"])
+    elif type_name == "List[long]":
+        lines.append(f"        int {name}Size = 0;")
+        lines.append(f"        long long* {name} = json_as_long_array({src}, &{name}Size);")
         call.extend([name, f"{name}Size"])
     elif type_name == "List[str]":
         lines.append(f"        int {name}Size = 0;")
@@ -52,9 +59,16 @@ def _emit_call(method: str, params: list[dict], return_type: str) -> str:
         prep.append("        int returnSize = 0;")
         prep.append(f"        int* got = {method}({joined}{', ' if joined else ''}&returnSize);")
         prep.append("        JsonValue gotj = json_from_int_array(got, returnSize);")
+    elif return_type == "List[long]":
+        prep.append("        int returnSize = 0;")
+        prep.append(f"        long long* got = {method}({joined}{', ' if joined else ''}&returnSize);")
+        prep.append("        JsonValue gotj = json_from_long_array(got, returnSize);")
     elif return_type == "int":
         prep.append(f"        int got = {method}({joined});")
         prep.append("        JsonValue gotj = json_from_int(got);")
+    elif return_type == "long":
+        prep.append(f"        long long got = {method}({joined});")
+        prep.append("        JsonValue gotj = json_from_long(got);")
     elif return_type == "float":
         prep.append(f"        double got = {method}({joined});")
         prep.append("        JsonValue gotj = json_num(got);")

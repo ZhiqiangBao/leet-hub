@@ -41,7 +41,7 @@ class LanguageAdapter:
 }
 ```
 
-类型：`int`、`float`、`bool`、`str`、嵌套 `List[T]`。
+类型：`int`、`long`、`float`、`bool`、`str`、嵌套 `List[T]`。默认 `int`；少数题用 `long`（C/C++ `long long`）。
 
 ## wrap
 

@@ -1,0 +1,9 @@
+class_name: Solution
+method: count_anagram_windows
+params:
+  - name: s
+    type: str
+  - name: L
+    type: int
+return_type: int
+compare: exact

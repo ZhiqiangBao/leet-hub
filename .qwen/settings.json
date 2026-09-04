@@ -1,15 +1,22 @@
 {
+	"model": {
+		"name": "qwen3.8-flash",
+		"baseUrl": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+	},
 	"agents": {
 		"builtin": {
-			"exploreModel": "qwen3.7-flash"
+			"exploreModel": "qwen3.8-flash"
 		},
 		"modelGrades": {
-			"small": "qwen3.7-flash"
+			"small": "qwen3.8-flash"
 		},
 		"allowedGrades": ["small"]
 	},
 	"mcp": {
 		"excluded": ["godot-ai", "blender"]
+	},
+	"permissions": {
+		"deny": ["skill"]
 	},
 	"$version": 4
 }

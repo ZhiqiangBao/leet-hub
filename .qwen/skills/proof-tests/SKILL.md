@@ -1,15 +1,23 @@
 ---
 name: proof-tests
-description: 机检一道题的 tests.jsonl（条数、int32、行长、与 tmp 参考解是否一致）。由 proof 调用；主编不要 read_file jsonl。
+description: >-
+  仅 proof 子代理按命令跑 check.py。主编不要调用本 skill，不要打开 check.py。
+disable-model-invocation: true
 priority: 20
 ---
 
 # 测例机检
 
-不识题意、不改文件。判定语义（示例是否对得上题面、R3 清单缺什么）仍由 `proof` 看 `statement.md` 与本脚本的 JSON。
+不识题意、不改文件。不要把 jsonl 读进模型。
 
 ```powershell
 python ".qwen/skills/proof-tests/check.py" --slug <slug>
 ```
 
-可选 `--ref .qwen/tmp/<slug>_ref.py`（默认就是这个路径）。参考解必须提供 `solve(*args)`。
+默认 `--ref .qwen/tmp/<slug>_ref.py`、`--solver .qwen/tmp/<slug>_solve2.py`。缺 solver 则 fail-closed。JSON 只含计数与至多若干行号，不含 `args`。
+
+题面机检（`quality` 在 tests 之前调用，不读 jsonl）：
+
+```powershell
+python ".qwen/skills/proof-tests/statement.py" --slug <slug>
+```

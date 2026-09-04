@@ -1,0 +1,9 @@
+slug: k-spaced-max-sum
+title: 间距不小于 K 的子集最大和
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - dp
+  - sorting
+  - binary-search

@@ -13,7 +13,7 @@ JSON_HEADER = Path(__file__).resolve().parents[1] / "runtimes" / "cpp" / "mini_j
 
 def cpp_type(type_name: str) -> str:
     name = type_name.strip()
-    mapping = {"int": "int", "float": "double", "bool": "bool", "str": "string"}
+    mapping = {"int": "int", "long": "long long", "float": "double", "bool": "bool", "str": "string"}
     if name in mapping:
         return mapping[name]
     if name.startswith("List[") and name.endswith("]"):
@@ -39,6 +39,8 @@ def emit_converters(types: list[str]) -> str:
         ctype = cpp_type(type_name)
         if type_name == "int":
             chunks.append(f"int {fn}(const JsonValue& v) {{ return v.as_int(); }}")
+        elif type_name == "long":
+            chunks.append(f"long long {fn}(const JsonValue& v) {{ return v.as_long(); }}")
         elif type_name == "float":
             chunks.append(f"double {fn}(const JsonValue& v) {{ return v.as_double(); }}")
         elif type_name == "bool":
