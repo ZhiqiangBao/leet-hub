@@ -11,7 +11,7 @@
 ```bash
 git clone https://github.com/ZhiqiangBao/leet-hub.git
 cd leet-hub
-chmod +x scripts/setup-ubuntu.sh scripts/run-ubuntu.sh scripts/update-from-github.sh
+chmod +x scripts/setup-ubuntu.sh scripts/run-ubuntu.sh scripts/update-from-github.sh scripts/serve-window.sh
 ./scripts/setup-ubuntu.sh
 ```
 
@@ -23,10 +23,17 @@ chmod +x scripts/setup-ubuntu.sh scripts/run-ubuntu.sh scripts/update-from-githu
 sudo ufw allow 8080/tcp
 ```
 
-不使用 systemd 的前台运行：
+不使用 systemd、当前终端前台运行（关闭终端即停止）：
 
 ```bash
 ./scripts/run-ubuntu.sh
+```
+
+弹出独立日志窗口（关闭该窗口即停止整个服务；若 `local-leet` 正在后台跑会先停掉）：
+
+```bash
+chmod +x scripts/serve-window.sh
+./scripts/serve-window.sh
 ```
 
 ## 查看与控制服务
@@ -36,11 +43,15 @@ systemctl status local-leet
 sudo systemctl start local-leet
 sudo systemctl stop local-leet
 sudo systemctl restart local-leet
+sudo systemctl disable --now local-leet
 journalctl -u local-leet -e
 journalctl -u local-leet -f
 ```
 
 `status` 中 `active (running)` 表示在运行。本机浏览器打开 `http://127.0.0.1:8080` 应出现登录页。
+
+- **systemd**：`stop` / `disable` 才能关掉。只关 `journalctl -f` 窗口不会停服务。
+- **日志窗口** `./scripts/serve-window.sh`：关窗口即停服务。
 
 若提示 `Unit local-leet.service not found`，尚未执行 `./scripts/setup-ubuntu.sh`。
 

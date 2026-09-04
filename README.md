@@ -23,11 +23,30 @@ JavaScript、Go、Rust、Zig 已预留适配器，实现步骤见文档。
 ```bash
 git clone https://github.com/ZhiqiangBao/leet-hub.git
 cd leet-hub
-chmod +x scripts/setup-ubuntu.sh scripts/run-ubuntu.sh scripts/update-from-github.sh
+chmod +x scripts/setup-ubuntu.sh scripts/run-ubuntu.sh scripts/update-from-github.sh scripts/serve-window.sh
 ./scripts/setup-ubuntu.sh
 ```
 
 服务名：`local-leet`，端口 `8080`。完整步骤见 [服务端操作](docs/server.md)。
+
+### 关闭服务
+
+后台（systemd，关终端也不停）：
+
+```bash
+sudo systemctl stop local-leet
+```
+
+开机不再自启：`sudo systemctl disable local-leet`。停用并立刻关闭：`sudo systemctl disable --now local-leet`。
+
+前台日志窗口（关闭窗口 = 停止整个服务）：
+
+```bash
+chmod +x scripts/serve-window.sh
+./scripts/serve-window.sh
+```
+
+会先 `stop` 已在跑的 `local-leet`，再弹出带日志的终端。关掉该窗口或在其中 `Ctrl+C` 即结束网站与判题。无图形界面时在当前终端前台运行，效果相同。
 
 ## 开发环境
 
