@@ -81,10 +81,12 @@ def wrap_c(user_code: str, signature: dict) -> str:
 {user_code.rstrip()}
 
 int main(void) {{
-    char line[1 << 20];
+    const int line_cap = 8 << 20;
+    char *line = (char *)malloc((size_t)line_cap);
+    if (!line) return 1;
     char **lines = NULL;
     int total = 0;
-    while (fgets(line, sizeof(line), stdin)) {{
+    while (fgets(line, line_cap, stdin)) {{
         size_t n = strlen(line);
         while (n && (line[n - 1] == '\\n' || line[n - 1] == '\\r')) line[--n] = 0;
         if (!n) continue;
