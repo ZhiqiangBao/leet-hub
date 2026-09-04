@@ -1,0 +1,11 @@
+class_name: Solution
+method: countPairsInRange
+params:
+  - name: nums
+    type: List[int]
+  - name: lo
+    type: int
+  - name: hi
+    type: int
+return_type: int
+compare: exact

@@ -1,0 +1,8 @@
+slug: dominant-index-count
+title: 占优下标计数
+difficulty: easy
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - array
+  - math

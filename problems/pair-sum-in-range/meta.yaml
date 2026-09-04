@@ -1,0 +1,9 @@
+slug: pair-sum-in-range
+title: 范围内元素对之和的个数
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - array
+  - two-pointers
+  - sorting

@@ -1,0 +1,13 @@
+class_name: Solution
+method: tileFloor
+params:
+  - name: n
+    type: int
+  - name: a
+    type: int
+  - name: b
+    type: int
+  - name: c
+    type: int
+return_type: int
+compare: exact

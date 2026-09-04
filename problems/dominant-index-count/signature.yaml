@@ -1,0 +1,7 @@
+class_name: Solution
+method: countDominant
+params:
+  - name: nums
+    type: List[int]
+return_type: int
+compare: exact

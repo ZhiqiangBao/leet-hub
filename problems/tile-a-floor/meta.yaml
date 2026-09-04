@@ -1,0 +1,8 @@
+slug: tile-a-floor
+title: 铺砖方案数
+difficulty: hard
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - dp
+  - math

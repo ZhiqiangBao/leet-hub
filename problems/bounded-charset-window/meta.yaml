@@ -1,0 +1,9 @@
+slug: bounded-charset-window
+title: 限定频窗最长子串
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - sliding-window
+  - hash
+  - string
