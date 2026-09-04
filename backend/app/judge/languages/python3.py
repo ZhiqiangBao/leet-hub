@@ -77,6 +77,7 @@ class Python3Adapter(LanguageAdapter):
             stdin="",
             time_ms=5000,
             memory_mb=256,
+            for_compile=True,
         )
         if result.tle:
             return CompileResult(ok=False, log="compile timeout")

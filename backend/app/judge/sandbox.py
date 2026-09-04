@@ -35,24 +35,45 @@ def _can_unshare() -> bool:
     return _UNSHARE_OK
 
 
-def wrap_linux(argv: list[str], time_ms: int, memory_mb: int) -> list[str]:
-    """Wrap argv with Ubuntu-native unshare/prlimit when present."""
+def wrap_linux(
+    argv: list[str],
+    time_ms: int,
+    memory_mb: int,
+    *,
+    for_compile: bool = False,
+) -> list[str]:
+    """Wrap argv with Ubuntu-native unshare/prlimit when present.
+
+    Compile must not use a tight nproc/AS cap: g++ spawns cc1plus, and
+    RLIMIT_NPROC is counted per user. A desktop session already has more
+    than 64 processes, which yields posix_spawn EAGAIN (资源暂时不可用).
+    """
     if not sys.platform.startswith("linux"):
         return argv
     cmd: list[str] = []
-    if _can_unshare():
+    if not for_compile and _can_unshare():
         cmd += ["unshare", "--net"]
     if shutil.which("prlimit"):
         cpu_sec = max(1, math.ceil(time_ms / 1000))
-        as_bytes = max(memory_mb, 256) * 1024 * 1024 * 4
-        cmd += [
-            "prlimit",
-            f"--cpu={cpu_sec}",
-            f"--as={as_bytes}",
-            "--nproc=64",
-            "--fsize=33554432",
-            "--",
-        ]
+        if for_compile:
+            as_bytes = 8 * 1024 * 1024 * 1024
+            cmd += [
+                "prlimit",
+                f"--cpu={cpu_sec}",
+                f"--as={as_bytes}",
+                "--fsize=268435456",
+                "--",
+            ]
+        else:
+            as_bytes = max(memory_mb, 256) * 1024 * 1024 * 4
+            cmd += [
+                "prlimit",
+                f"--cpu={cpu_sec}",
+                f"--as={as_bytes}",
+                "--nproc=4096",
+                "--fsize=33554432",
+                "--",
+            ]
     cmd += argv
     return cmd
 
@@ -64,9 +85,11 @@ def run_limited(
     stdin: str,
     time_ms: int,
     memory_mb: int,
+    for_compile: bool = False,
 ) -> RunResult:
     wall = time_ms / 1000.0 + 1.0
-    cmd = wrap_linux(argv, time_ms, memory_mb)
+    cmd = wrap_linux(argv, time_ms, memory_mb, for_compile=for_compile)
+
     env = {
         **os.environ,
         "PYTHONDONTWRITEBYTECODE": "1",

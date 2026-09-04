@@ -159,8 +159,9 @@ class Cpp17Adapter(LanguageAdapter):
             [compiler, "-O2", "-std=c++17", "-pipe", "-o", "program", self.source_filename],
             cwd=Path(workdir),
             stdin="",
-            time_ms=15000,
-            memory_mb=512,
+            time_ms=30000,
+            memory_mb=4096,
+            for_compile=True,
         )
         if result.tle:
             return CompileResult(ok=False, log="compile timeout")
