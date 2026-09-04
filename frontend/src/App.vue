@@ -4,7 +4,7 @@
   </div>
   <div v-else>
     <header class="topbar">
-      <router-link class="brand" to="/">LOCAL LEET</router-link>
+      <router-link class="brand" to="/">Leet Hub</router-link>
       <nav>
         <router-link to="/">题目</router-link>
         <router-link to="/scores">成绩</router-link>

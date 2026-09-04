@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -13,8 +15,10 @@ from ..deps import get_current_user
 from ..judge.languages import language_status
 from ..judge.engine import judge_source
 from ..judge.queue import enqueue
-from ..models import Submission, User
+from ..models import Draft, Submission, User
 from ..schemas import (
+    DraftIn,
+    DraftOut,
     ProblemDetailOut,
     ProblemMetaOut,
     RankingOut,
@@ -104,6 +108,82 @@ def get_problem(slug: str, db: Session = Depends(get_db), user: User = Depends(g
         statement_md=problem.statement_md,
         signature=problem.signature,
         starter=problem.starter,
+    )
+
+
+def _starter_source(slug: str, language: str) -> str:
+    problem = bank.get(slug)
+    if language in problem.starter:
+        return problem.starter[language]
+    return next(iter(problem.starter.values()), "")
+
+
+@router.get("/problems/{slug}/draft", response_model=DraftOut)
+def get_draft(
+    slug: str,
+    language: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> DraftOut:
+    try:
+        bank.get(slug)
+    except KeyError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "题目不存在") from None
+    row = db.scalars(
+        select(Draft).where(
+            Draft.user_id == user.id,
+            Draft.problem_slug == slug,
+            Draft.language == language,
+        )
+    ).first()
+    if row:
+        return DraftOut(
+            language=language,
+            source=row.source,
+            from_starter=False,
+            updated_at=row.updated_at.isoformat() if row.updated_at else None,
+        )
+    return DraftOut(language=language, source=_starter_source(slug, language), from_starter=True, updated_at=None)
+
+
+@router.put("/problems/{slug}/draft", response_model=DraftOut)
+def put_draft(
+    slug: str,
+    body: DraftIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> DraftOut:
+    try:
+        bank.get(slug)
+    except KeyError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "题目不存在") from None
+    if len(body.source.encode("utf-8")) > SOURCE_MAX_BYTES:
+        raise HTTPException(413, "代码过长")
+    row = db.scalars(
+        select(Draft).where(
+            Draft.user_id == user.id,
+            Draft.problem_slug == slug,
+            Draft.language == body.language,
+        )
+    ).first()
+    if row:
+        row.source = body.source
+        row.updated_at = datetime.utcnow()
+    else:
+        row = Draft(
+            user_id=user.id,
+            problem_slug=slug,
+            language=body.language,
+            source=body.source,
+        )
+        db.add(row)
+    db.commit()
+    db.refresh(row)
+    return DraftOut(
+        language=row.language,
+        source=row.source,
+        from_starter=False,
+        updated_at=row.updated_at.isoformat() if row.updated_at else None,
     )
 
 

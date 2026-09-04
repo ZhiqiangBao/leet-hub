@@ -1,7 +1,7 @@
 <template>
   <div class="auth-page">
     <form class="card" @submit.prevent="submit">
-      <h1>Local Leet</h1>
+      <h1>Leet Hub</h1>
       <p class="hint">家庭局域网评测。{{ mode === "login" ? "登录后开始做题。" : "第一个注册的用户会成为管理员。" }}</p>
       <label>用户名</label>
       <input v-model="username" autocomplete="username" required minlength="3" maxlength="32" />

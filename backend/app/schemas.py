@@ -65,6 +65,18 @@ class SubmitIn(BaseModel):
     source: str = Field(min_length=1, max_length=262144)
 
 
+class DraftIn(BaseModel):
+    language: str
+    source: str = Field(max_length=262144)
+
+
+class DraftOut(BaseModel):
+    language: str
+    source: str
+    from_starter: bool
+    updated_at: str | None = None
+
+
 class SubmissionOut(BaseModel):
     id: int
     problem_slug: str

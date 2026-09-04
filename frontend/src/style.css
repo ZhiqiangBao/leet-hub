@@ -1,17 +1,18 @@
 :root {
-  --bg: #101114;
-  --bg-raise: #17181d;
-  --panel: #1c1e24;
-  --line: #2b2e36;
-  --text: #e7e4dc;
-  --muted: #9a9588;
-  --accent: #e3a008;
-  --easy: #2cb67d;
-  --medium: #d97706;
-  --hard: #e5484d;
-  --ac: #2cb67d;
-  --wa: #e5484d;
-  font-family: "Segoe UI", "IBM Plex Sans", "Noto Sans SC", sans-serif;
+  --bg: #1a1a1a;
+  --bg-raise: #1e1e1e;
+  --panel: #262626;
+  --line: #3e3e3e;
+  --text: #eff1f6;
+  --muted: #9aa0a6;
+  --accent: #ffa116;
+  --easy: #00b8a3;
+  --medium: #ffc01e;
+  --hard: #ff375f;
+  --ac: #2cbb5d;
+  --wa: #ef4743;
+  --submit: #2cbb5d;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -35,9 +36,73 @@ code, pre { font-family: "Cascadia Code", "Consolas", "IBM Plex Mono", monospace
 }
 .brand {
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--accent);
+  letter-spacing: 0.02em;
+  color: var(--text);
 }
+.btn-run {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 650;
+}
+.btn-submit {
+  background: var(--submit);
+  color: #0f1b12;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 700;
+}
+.btn-run:disabled, .btn-submit:disabled, .ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  width: auto;
+}
+.chip.on { border-color: var(--submit); color: var(--submit); }
+.chip.tiny { margin-right: 6px; padding: 1px 8px; }
+.chip.easy.on { border-color: var(--easy); color: var(--easy); }
+.chip.medium.on { border-color: var(--medium); color: var(--medium); }
+.chip.hard.on { border-color: var(--hard); color: var(--hard); }
+.list-toolbar, .tag-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.search { max-width: 280px; width: 280px; }
+.title-link:hover { color: var(--submit); }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.tabs button {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  padding: 6px 4px;
+  border-bottom: 2px solid transparent;
+}
+.tabs button.on { color: var(--text); border-bottom-color: var(--submit); }
+.console {
+  margin-top: 0;
+  background: #161616;
+  border-top: 1px solid var(--line);
+  padding: 10px 14px;
+  font-size: 13px;
+  max-height: 180px;
+  overflow: auto;
+}
+.console-head { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.draft-hint { font-size: 12px; }
+.editor-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0 0;
+  margin-top: 8px;
+}
+.editor-wrap { flex: 1; min-height: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .topbar nav { display: flex; gap: 16px; color: var(--muted); }
 .topbar nav a.router-link-active { color: var(--text); }
 .spacer { flex: 1; }
@@ -115,7 +180,7 @@ th { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.0
 .md pre, .md code { background: #121318; }
 .md pre { padding: 12px; border-radius: 8px; overflow: auto; }
 .md code { padding: 1px 4px; border-radius: 4px; }
-.editor-pane { display: flex; flex-direction: column; min-width: 0; }
+.editor-pane { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 .editor-bar select { width: auto; min-width: 168px; flex: 0 0 auto; }
 .bar-hint { margin: 0 0 10px; }
 .rank-box { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -152,16 +217,5 @@ tr.open { background: #121318; }
 }
 .admin-links { margin-top: 24px; }
 .admin-links a { color: var(--accent); }
-.editor-wrap { flex: 1; min-height: 240px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.result {
-  margin-top: 12px;
-  background: #121318;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px 14px;
-  font-size: 14px;
-  max-height: 220px;
-  overflow: auto;
-}
 .admin-grid { display: grid; gap: 16px; }
 .admin-grid textarea { min-height: 140px; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; }

@@ -18,6 +18,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     submissions: Mapped[list[Submission]] = relationship(back_populates="user")
+    drafts: Mapped[list["Draft"]] = relationship(back_populates="user")
 
 
 class Submission(Base):
@@ -38,3 +39,17 @@ class Submission(Base):
     judged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     user: Mapped[User] = relationship(back_populates="submissions")
+
+
+class Draft(Base):
+    __tablename__ = "drafts"
+    __table_args__ = (UniqueConstraint("user_id", "problem_slug", "language"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    problem_slug: Mapped[str] = mapped_column(String(64), index=True)
+    language: Mapped[str] = mapped_column(String(32))
+    source: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    user: Mapped[User] = relationship(back_populates="drafts")

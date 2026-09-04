@@ -148,6 +148,15 @@ export const Problems = {
     }),
   ranking: (slug: string, language: string) =>
     api<Ranking>(`/api/problems/${slug}/ranking?language=${encodeURIComponent(language)}`),
+  getDraft: (slug: string, language: string) =>
+    api<{ language: string; source: string; from_starter: boolean; updated_at: string | null }>(
+      `/api/problems/${slug}/draft?language=${encodeURIComponent(language)}`,
+    ),
+  saveDraft: (slug: string, language: string, source: string) =>
+    api(`/api/problems/${slug}/draft`, {
+      method: "PUT",
+      body: JSON.stringify({ language, source }),
+    }),
 };
 
 export const Scores = {
