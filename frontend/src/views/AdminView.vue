@@ -1,7 +1,10 @@
 <template>
   <main class="page admin-grid">
     <h1>增加题目 / 测试集</h1>
-    <p class="hint">管理员可以把题目写到磁盘上的 `problems/` 目录，也可在此用 JSON 提交。</p>
+    <p class="hint">
+      管理员可以把题目写到磁盘上的 `problems/` 目录，也可在此用 JSON 提交。
+      <router-link to="/admin">返回统计与提交</router-link>
+    </p>
     <p v-if="message" class="ac">{{ message }}</p>
     <p class="err">{{ error }}</p>
     <div class="row">

@@ -1,13 +1,119 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import json
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from ..db import get_db
 from ..deps import get_admin_user
-from ..models import User
-from ..schemas import ProblemCreateIn, ProblemUpdateIn, TestsAppendIn, TestsReplaceIn
+from ..models import Submission, User
+from ..schemas import (
+    AdminStatsOut,
+    AdminSubmissionOut,
+    ProblemCreateIn,
+    ProblemStat,
+    ProblemUpdateIn,
+    TestsAppendIn,
+    TestsReplaceIn,
+)
 from ..services.problems import ProblemError, bank
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+
+def _admin_submission_out(sub: Submission, username: str, include_source: bool = False) -> AdminSubmissionOut:
+    details = None
+    if sub.details_json:
+        try:
+            details = json.loads(sub.details_json)
+        except json.JSONDecodeError:
+            details = {"message": sub.details_json}
+    return AdminSubmissionOut(
+        id=sub.id,
+        user_id=sub.user_id,
+        username=username,
+        problem_slug=sub.problem_slug,
+        language=sub.language,
+        status=sub.status,
+        verdict=sub.verdict,
+        details=details,
+        compile_log=sub.compile_log,
+        time_ms=sub.time_ms,
+        created_at=sub.created_at.isoformat() if sub.created_at else "",
+        judged_at=sub.judged_at.isoformat() if sub.judged_at else None,
+        source=sub.source if include_source else None,
+    )
+
+
+@router.get("/stats", response_model=AdminStatsOut)
+def stats(_admin: User = Depends(get_admin_user), db: Session = Depends(get_db)) -> AdminStatsOut:
+    users = int(db.scalar(select(func.count()).select_from(User)) or 0)
+    submissions = int(db.scalar(select(func.count()).select_from(Submission)) or 0)
+    accepted = int(
+        db.scalar(select(func.count()).select_from(Submission).where(Submission.verdict == "AC")) or 0
+    )
+    by_problem: list[ProblemStat] = []
+    for problem in bank.list():
+        total = int(
+            db.scalar(
+                select(func.count()).select_from(Submission).where(Submission.problem_slug == problem.slug)
+            )
+            or 0
+        )
+        ac = int(
+            db.scalar(
+                select(func.count())
+                .select_from(Submission)
+                .where(Submission.problem_slug == problem.slug, Submission.verdict == "AC")
+            )
+            or 0
+        )
+        by_problem.append(ProblemStat(slug=problem.slug, title=problem.title, submissions=total, accepted=ac))
+    return AdminStatsOut(
+        users=users,
+        submissions=submissions,
+        accepted=accepted,
+        problems=len(bank.list()),
+        by_problem=by_problem,
+    )
+
+
+@router.get("/submissions", response_model=list[AdminSubmissionOut])
+def list_submissions(
+    db: Session = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+    slug: str | None = None,
+    username: str | None = None,
+    language: str | None = None,
+    limit: int = 100,
+) -> list[AdminSubmissionOut]:
+    stmt = select(Submission, User.username).join(User, User.id == Submission.user_id)
+    if slug:
+        stmt = stmt.where(Submission.problem_slug == slug)
+    if language:
+        stmt = stmt.where(Submission.language == language)
+    if username:
+        stmt = stmt.where(User.username == username)
+    stmt = stmt.order_by(Submission.id.desc()).limit(min(max(limit, 1), 300))
+    rows = db.execute(stmt).all()
+    return [_admin_submission_out(sub, name) for sub, name in rows]
+
+
+@router.get("/submissions/{sub_id}", response_model=AdminSubmissionOut)
+def get_submission(
+    sub_id: int,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+) -> AdminSubmissionOut:
+    row = db.execute(
+        select(Submission, User.username).join(User, User.id == Submission.user_id).where(Submission.id == sub_id)
+    ).first()
+    if not row:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "提交不存在")
+    sub, name = row
+    return _admin_submission_out(sub, name, include_source=True)
 
 
 @router.post("/problems")

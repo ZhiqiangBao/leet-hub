@@ -28,7 +28,7 @@ def _last_json(stdout: str) -> dict[str, Any] | None:
     return None
 
 
-def _public_details(raw: dict[str, Any], tests: list) -> dict[str, Any]:
+def _public_details(raw: dict[str, Any], tests: list, *, reveal_public: bool = False) -> dict[str, Any]:
     details = {
         "verdict": raw.get("verdict"),
         "passed": raw.get("passed"),
@@ -39,17 +39,17 @@ def _public_details(raw: dict[str, Any], tests: list) -> dict[str, Any]:
     }
     failed_index = raw.get("failed_index")
     passed_count = int(raw.get("passed") or 0)
-    if raw.get("verdict") == "AC":
-        details["cases"] = [{"index": i, "passed": True} for i in range(len(tests))]
-        return details
     cases = []
     for i, test in enumerate(tests):
-        case: dict[str, Any] = {"index": i, "passed": i < passed_count, "hidden": bool(test.hidden)}
+        passed = raw.get("verdict") == "AC" or i < passed_count
         if failed_index is not None and i == failed_index:
-            case["passed"] = False
-            if not test.hidden:
-                case["args"] = test.args
-                case["expected"] = test.expected
+            passed = False
+        case: dict[str, Any] = {"index": i, "passed": passed, "hidden": bool(test.hidden)}
+        show = (not test.hidden) and (reveal_public or not passed or failed_index == i)
+        if show and not test.hidden:
+            case["args"] = test.args
+            case["expected"] = test.expected
+            if failed_index is not None and i == failed_index:
                 if "got" in raw:
                     case["got"] = raw["got"]
                 if raw.get("message"):
@@ -59,7 +59,12 @@ def _public_details(raw: dict[str, Any], tests: list) -> dict[str, Any]:
     return details
 
 
-def judge_source(problem_slug: str, language: str, source: str) -> dict[str, Any]:
+def judge_source(
+    problem_slug: str,
+    language: str,
+    source: str,
+    public_only: bool = False,
+) -> dict[str, Any]:
     adapter = get_adapter(language)
     if adapter is None:
         return {"verdict": "NA", "details": {"message": f"未知语言: {language}"}, "compile_log": None, "time_ms": 0}
@@ -79,6 +84,14 @@ def judge_source(problem_slug: str, language: str, source: str) -> dict[str, Any
         }
 
     problem = bank.get(problem_slug)
+    tests = problem.selected_tests(public_only=public_only)
+    if public_only and not tests:
+        return {
+            "verdict": "NA",
+            "details": {"message": "本题没有公开测例"},
+            "compile_log": None,
+            "time_ms": 0,
+        }
     signature = problem.signature.model_dump()
     tmp_root = DATA_DIR / "tmp"
     tmp_root.mkdir(parents=True, exist_ok=True)
@@ -98,21 +111,21 @@ def judge_source(problem_slug: str, language: str, source: str) -> dict[str, Any
         run = run_limited(
             adapter.run_argv(str(workdir)),
             cwd=workdir,
-            stdin=problem.tests_stdin(),
+            stdin=problem.tests_stdin(public_only=public_only),
             time_ms=problem.time_limit_ms,
             memory_mb=problem.memory_limit_mb,
         )
         if run.tle:
             return {
                 "verdict": "TLE",
-                "details": {"message": "超出时间限制", "total": len(problem.tests)},
+                "details": {"message": "超出时间限制", "total": len(tests)},
                 "compile_log": compiled.log,
                 "time_ms": problem.time_limit_ms,
             }
         if run.mle:
             return {
                 "verdict": "MLE",
-                "details": {"message": "超出内存限制", "total": len(problem.tests)},
+                "details": {"message": "超出内存限制", "total": len(tests)},
                 "compile_log": compiled.log,
                 "time_ms": run.time_ms,
             }
@@ -122,7 +135,7 @@ def judge_source(problem_slug: str, language: str, source: str) -> dict[str, Any
                 "verdict": "RE",
                 "details": {
                     "message": (run.stderr or run.stdout or "runtime error")[-MAX_LOG:],
-                    "total": len(problem.tests),
+                    "total": len(tests),
                 },
                 "compile_log": compiled.log,
                 "time_ms": run.time_ms,
@@ -139,7 +152,7 @@ def judge_source(problem_slug: str, language: str, source: str) -> dict[str, Any
             verdict = "RE"
         return {
             "verdict": verdict,
-            "details": _public_details(payload, problem.tests),
+            "details": _public_details(payload, tests, reveal_public=public_only),
             "compile_log": compiled.log,
             "time_ms": run.time_ms,
         }

@@ -101,7 +101,7 @@ compare: any_order
 - `hidden: false`：该测例失败时，网页展示输入、期望与实际输出。
 - `hidden: true`：只提示第几号测例失败。正式数据放隐藏测例。
 
-建议至少 2 条公开测例、若干隐藏测例。公开测例应与题面示例一致。
+公开测例 2～3 条，与题面示例一致。提交用隐藏测例不少于 20 条，须覆盖边界与临界条件。写法见项目 skill [design-problem-tests](../.cursor/skills/design-problem-tests/SKILL.md)。
 
 ## starter
 

@@ -50,6 +50,49 @@ export type Submission = {
   created_at: string;
   judged_at: string | null;
   source?: string | null;
+  username?: string;
+  user_id?: number;
+};
+
+export type RunResult = {
+  kind: "test";
+  verdict: string;
+  details: Record<string, unknown> | null;
+  compile_log: string | null;
+  time_ms: number | null;
+  public_count: number;
+};
+
+export type RankEntry = {
+  rank: number;
+  username: string;
+  time_ms: number;
+  is_me: boolean;
+};
+
+export type Ranking = {
+  slug: string;
+  language: string;
+  total: number;
+  mine: RankEntry | null;
+  entries: RankEntry[];
+};
+
+export type ScoreRow = {
+  slug: string;
+  title: string;
+  language: string;
+  time_ms: number;
+  rank: number;
+  total: number;
+};
+
+export type AdminStats = {
+  users: number;
+  submissions: number;
+  accepted: number;
+  problems: number;
+  by_problem: { slug: string; title: string; submissions: number; accepted: number }[];
 };
 
 async function parseError(res: Response): Promise<string> {
@@ -98,6 +141,17 @@ export const Problems = {
       method: "POST",
       body: JSON.stringify({ language, source }),
     }),
+  run: (slug: string, language: string, source: string) =>
+    api<RunResult>(`/api/problems/${slug}/run`, {
+      method: "POST",
+      body: JSON.stringify({ language, source }),
+    }),
+  ranking: (slug: string, language: string) =>
+    api<Ranking>(`/api/problems/${slug}/ranking?language=${encodeURIComponent(language)}`),
+};
+
+export const Scores = {
+  mine: () => api<ScoreRow[]>("/api/scores"),
 };
 
 export const Submissions = {
@@ -110,6 +164,16 @@ export const Languages = {
 };
 
 export const Admin = {
+  stats: () => api<AdminStats>("/api/admin/stats"),
+  submissions: (q?: { slug?: string; username?: string; language?: string }) => {
+    const params = new URLSearchParams();
+    if (q?.slug) params.set("slug", q.slug);
+    if (q?.username) params.set("username", q.username);
+    if (q?.language) params.set("language", q.language);
+    const qs = params.toString();
+    return api<Submission[]>(`/api/admin/submissions${qs ? `?${qs}` : ""}`);
+  },
+  submission: (id: number) => api<Submission>(`/api/admin/submissions/${id}`),
   create: (body: unknown) => api("/api/admin/problems", { method: "POST", body: JSON.stringify(body) }),
   update: (slug: string, body: unknown) =>
     api(`/api/admin/problems/${slug}`, { method: "PUT", body: JSON.stringify(body) }),

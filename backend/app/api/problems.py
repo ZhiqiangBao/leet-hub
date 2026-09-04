@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,10 +11,20 @@ from ..config import SOURCE_MAX_BYTES
 from ..db import get_db
 from ..deps import get_current_user
 from ..judge.languages import language_status
+from ..judge.engine import judge_source
 from ..judge.queue import enqueue
 from ..models import Submission, User
-from ..schemas import ProblemDetailOut, ProblemMetaOut, SubmissionOut, SubmitIn
+from ..schemas import (
+    ProblemDetailOut,
+    ProblemMetaOut,
+    RankingOut,
+    RunOut,
+    ScoreRow,
+    SubmissionOut,
+    SubmitIn,
+)
 from ..services.problems import bank
+from ..services.ranking import ranking_for, scores_for_user
 
 router = APIRouter(prefix="/api", tags=["problems"])
 
@@ -120,6 +132,51 @@ async def submit(
     db.refresh(sub)
     await enqueue(sub.id)
     return _submission_out(sub)
+
+
+@router.post("/problems/{slug}/run", response_model=RunOut)
+async def run_public(
+    slug: str,
+    body: SubmitIn,
+    _user: User = Depends(get_current_user),
+) -> RunOut:
+    try:
+        problem = bank.get(slug)
+    except KeyError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "题目不存在") from None
+    if len(body.source.encode("utf-8")) > SOURCE_MAX_BYTES:
+        raise HTTPException(413, "代码过长")
+    public = [t for t in problem.tests if not t.hidden]
+    if not public:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "本题没有公开测例")
+    result = await asyncio.to_thread(judge_source, slug, body.language, body.source, True)
+    return RunOut(
+        kind="test",
+        verdict=str(result.get("verdict") or "NA"),
+        details=result.get("details"),
+        compile_log=result.get("compile_log"),
+        time_ms=result.get("time_ms"),
+        public_count=len(public),
+    )
+
+
+@router.get("/problems/{slug}/ranking", response_model=RankingOut)
+def problem_ranking(
+    slug: str,
+    language: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> RankingOut:
+    try:
+        bank.get(slug)
+    except KeyError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "题目不存在") from None
+    return ranking_for(db, slug, language, user.id)
+
+
+@router.get("/scores", response_model=list[ScoreRow])
+def my_scores(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> list[ScoreRow]:
+    return scores_for_user(db, user.id)
 
 
 @router.get("/submissions", response_model=list[SubmissionOut])

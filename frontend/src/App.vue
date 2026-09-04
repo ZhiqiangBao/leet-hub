@@ -7,6 +7,7 @@
       <router-link class="brand" to="/">LOCAL LEET</router-link>
       <nav>
         <router-link to="/">题目</router-link>
+        <router-link to="/scores">成绩</router-link>
         <router-link to="/submissions">提交记录</router-link>
         <router-link v-if="user?.is_admin" to="/admin">管理</router-link>
       </nav>

@@ -17,6 +17,7 @@ JavaScript、Go、Rust、Zig 已预留适配器，实现步骤见文档。
 | [客户端操作](docs/client.md) | 浏览器注册、做题、提交、网页管理 |
 | [接入语言](docs/languages.md) | 入口：主机装工具链与仓库改代码 |
 | [编写语言适配器](docs/adapters.md) | `LanguageAdapter`、驱动协议、JS / Go / Rust / Zig 写法 |
+| [后续改进方向](docs/roadmap.md) | 提交后台与耗时榜、加题、测试/提交分离 |
 
 ## 快速开始（评测主机）
 

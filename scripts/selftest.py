@@ -96,6 +96,10 @@ def main() -> None:
     expect("python AC", judge_source("two-sum", "python3", AC_TWO_SUM), "AC")
     expect("python WA", judge_source("two-sum", "python3", WA_TWO_SUM), "WA")
     expect("python CE", judge_source("two-sum", "python3", CE_TWO_SUM), "CE")
+    public_ac = judge_source("two-sum", "python3", AC_TWO_SUM, True)
+    expect("python public-only AC", public_ac, "AC")
+    if (public_ac.get("details") or {}).get("total") != 3:
+        raise SystemExit(f"[FAIL] public-only should run 3 examples, got {public_ac}")
     na = judge_source("two-sum", "javascript", "class Solution {}")
     expect("javascript stub NA", na, "NA")
 

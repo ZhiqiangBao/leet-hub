@@ -90,8 +90,13 @@ class Problem:
                 if file.is_file():
                     self.starter[file.stem] = file.read_text(encoding="utf-8")
 
-    def tests_stdin(self) -> str:
-        return dump_tests(self.tests)
+    def selected_tests(self, *, public_only: bool = False) -> list[TestCase]:
+        if public_only:
+            return [t for t in self.tests if not t.hidden]
+        return list(self.tests)
+
+    def tests_stdin(self, *, public_only: bool = False) -> str:
+        return dump_tests(self.selected_tests(public_only=public_only))
 
     def meta_dict(self) -> dict[str, Any]:
         return {

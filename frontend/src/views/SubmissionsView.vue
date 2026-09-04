@@ -1,6 +1,7 @@
 <template>
   <main class="page">
     <h1>我的提交</h1>
+    <p class="hint">仅正式提交。名次见顶栏「成绩」。测试运行不会出现在此。</p>
     <table>
       <thead>
         <tr>

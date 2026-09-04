@@ -118,3 +118,56 @@ class TestsReplaceIn(BaseModel):
 
 class TestsAppendIn(BaseModel):
     tests: list[TestCase] = Field(min_length=1)
+
+
+class RunOut(BaseModel):
+    kind: str = "test"
+    verdict: str
+    details: dict[str, Any] | None = None
+    compile_log: str | None = None
+    time_ms: int | None = None
+    public_count: int = 0
+
+
+class RankEntry(BaseModel):
+    rank: int
+    username: str
+    time_ms: int
+    is_me: bool = False
+
+
+class RankingOut(BaseModel):
+    slug: str
+    language: str
+    total: int
+    mine: RankEntry | None = None
+    entries: list[RankEntry]
+
+
+class ScoreRow(BaseModel):
+    slug: str
+    title: str
+    language: str
+    time_ms: int
+    rank: int
+    total: int
+
+
+class AdminSubmissionOut(SubmissionOut):
+    user_id: int
+    username: str
+
+
+class ProblemStat(BaseModel):
+    slug: str
+    title: str
+    submissions: int
+    accepted: int
+
+
+class AdminStatsOut(BaseModel):
+    users: int
+    submissions: int
+    accepted: int
+    problems: int
+    by_problem: list[ProblemStat]
