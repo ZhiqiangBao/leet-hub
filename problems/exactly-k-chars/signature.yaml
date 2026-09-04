@@ -1,0 +1,9 @@
+class_name: Solution
+method: countChars
+params:
+  - name: s
+    type: str
+  - name: k
+    type: int
+return_type: int
+compare: exact

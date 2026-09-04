@@ -1,0 +1,11 @@
+class_name: Solution
+method: countInRange
+params:
+  - name: left
+    type: int
+  - name: right
+    type: int
+  - name: d
+    type: int
+return_type: int
+compare: exact

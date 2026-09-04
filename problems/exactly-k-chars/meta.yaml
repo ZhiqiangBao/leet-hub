@@ -1,0 +1,8 @@
+slug: exactly-k-chars
+title: 恰好出现 K 次的字符数
+difficulty: easy
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - string
+  - hash

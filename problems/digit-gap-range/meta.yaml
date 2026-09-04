@@ -1,0 +1,6 @@
+slug: digit-gap-range
+title: 统计区间内d-平滑数
+difficulty: hard
+tags: [dp, math]
+time_limit_ms: 2000
+memory_limit_mb: 256
