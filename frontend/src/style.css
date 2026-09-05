@@ -180,6 +180,8 @@ th { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.0
 .md pre, .md code { background: #121318; }
 .md pre { padding: 12px; border-radius: 8px; overflow: auto; }
 .md code { padding: 1px 4px; border-radius: 4px; }
+.md .katex { color: inherit; font-size: 1.08em; }
+.md .katex-display { overflow-x: auto; overflow-y: hidden; margin: 0.6em 0; }
 .editor-pane { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 .editor-bar select { width: auto; min-width: 168px; flex: 0 0 auto; }
 .bar-hint { margin: 0 0 10px; }

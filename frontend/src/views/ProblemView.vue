@@ -86,8 +86,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { marked } from "marked";
 import CodeEditor from "../components/CodeEditor.vue";
+import { renderStatement } from "../markdown";
 import {
   Languages,
   Problems,
@@ -120,7 +120,7 @@ const details = computed(() => (result.value?.details || null) as Record<string,
 const cases = computed(
   () => (Array.isArray(details.value?.cases) ? details.value?.cases : []) as Array<Record<string, unknown>>,
 );
-const html = computed(() => marked.parse(problem.value?.statement_md || "") as string);
+const html = computed(() => renderStatement(problem.value?.statement_md || ""));
 
 onMounted(async () => {
   languages.value = await Languages.list();
