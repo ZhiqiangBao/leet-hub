@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import * as monaco from "monaco-editor";
+import { readTheme, THEME_EVENT } from "../theme";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
@@ -77,13 +78,21 @@ function configurePythonIndent() {
   });
 }
 
+function monacoTheme() {
+  return readTheme() === "light" ? "vs" : "vs-dark";
+}
+
+function onThemeChange() {
+  monaco.editor.setTheme(monacoTheme());
+}
+
 onMounted(() => {
   if (!root.value) return;
   configurePythonIndent();
   editor = monaco.editor.create(root.value, {
     value: props.modelValue,
     language: monacoLang[props.language] || "plaintext",
-    theme: "vs-dark",
+    theme: monacoTheme(),
     automaticLayout: true,
     minimap: { enabled: false },
     fontSize: 14,
@@ -96,6 +105,7 @@ onMounted(() => {
   editor.onDidChangeModelContent(() => {
     emit("update:modelValue", editor?.getValue() || "");
   });
+  window.addEventListener(THEME_EVENT, onThemeChange);
 });
 
 watch(
@@ -115,6 +125,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  window.removeEventListener(THEME_EVENT, onThemeChange);
   editor?.dispose();
 });
 </script>
