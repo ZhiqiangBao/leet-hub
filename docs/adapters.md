@@ -7,8 +7,8 @@
 3. `run_limited(run_argv(workdir), stdin=tests.jsonl, …)` → 解析 stdout 最后一行 JSON
 
 基类：[`backend/app/judge/base.py`](../backend/app/judge/base.py)。  
-已实现：[`python3.py`](../backend/app/judge/languages/python3.py)、[`c11.py`](../backend/app/judge/languages/c11.py)、[`cpp17.py`](../backend/app/judge/languages/cpp17.py)。  
-桩：[`stubs.py`](../backend/app/judge/languages/stubs.py)（`javascript` / `go` / `rust` / `zig`）。TypeScript 尚未登记，规划见 [roadmap.md](roadmap.md)。
+已实现：[`python3.py`](../backend/app/judge/languages/python3.py)、[`c11.py`](../backend/app/judge/languages/c11.py)、[`cpp17.py`](../backend/app/judge/languages/cpp17.py)、[`javascript.py`](../backend/app/judge/languages/javascript.py)、[`typescript.py`](../backend/app/judge/languages/typescript.py)。  
+桩：[`stubs.py`](../backend/app/judge/languages/stubs.py)（`go` / `rust` / `zig`）。
 
 工具链装在评测主机；适配器代码进 Git 后由主机拉取。见 [server.md](server.md)。题目格式见 [problems.md](problems.md)。
 
@@ -91,19 +91,21 @@ class LanguageAdapter:
 
 ### JavaScript（`javascript`）
 
-- `detect`：`shutil.which("node")`。主机：`sudo apt install nodejs`。
-- `source_filename`：`solution.js`。`compile`：`node --check solution.js`。`run_argv`：`[node, "solution.js"]`。
+- `detect`：`shutil.which("node")`（Linux 优先 `/usr/bin/node`）。主机已有 Node 即可，例如 `node --version` 为 v22。
+- `source_filename`：`solution.js`。`compile`：`node --check solution.js`。`run_argv`：`[node, "--no-warnings", "solution.js"]`。
 - 用户：`class Solution { twoSum(nums, target) { ... } }`。驱动 `JSON.parse` 每行，`new Solution()` 后调用 `signature.method`。
 - 不要 `require` 外部 npm 包。
 
 ### TypeScript（`typescript`）
 
-规划中，尚无适配器。与 JavaScript 共用主机上的 Node。
+与 JavaScript 共用主机上的 Node，**另外需要 `tsc`**。
 
-- `detect`：`shutil.which("node")` 且能调用 `tsc`（`npm install -g typescript`，或固定路径的 `tsc`）。
-- `source_filename`：`solution.ts`。`compile`：`tsc` 输出 JS（无外部 `@types` / npm 包），`run_argv`：`[node, "solution.js"]`。
+- 安装：`sudo npm install -g typescript`，然后 `tsc --version` 能打印 Version。不要用 Bun / Deno，也不要每题 `npm install` 或 `@types/node`。
+- `detect`：能找到 `node` 且能调用 `tsc`（`PATH` 中的 `tsc`，或 `/usr/lib/node_modules/typescript/bin/tsc`）。
+- `source_filename`：`solution.ts`。`compile`：在工作目录写最小 `tsconfig.json` 后 `tsc -p tsconfig.json`（无外部 `@types` / npm 包），`run_argv`：`[node, "--no-warnings", "solution.js"]`。
 - 用户：`class Solution { twoSum(nums: number[], target: number) { ... } }`，驱动形态与 JS 相同。
 - 不要 `import` 外部包。类型注解仅服务 `tsc`，测例仍是 JSON。
+- 若 Node 是 nvm 装的，systemd 服务可能看不到 `tsc`。用 `sudo npm install -g typescript` 装到 `/usr/bin` 或 `/usr/local/bin`，或给 `local-leet.service` 补上含 `node`/`tsc` 的 `PATH`。
 
 ### Go（`go`）
 

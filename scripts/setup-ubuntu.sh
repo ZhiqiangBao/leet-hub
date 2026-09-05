@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Install Local Leet on the Ubuntu judge host.
-# Judging uses this machine's system python3, gcc, and g++.
+# Judging uses this machine's system python3, gcc, g++, node, and tsc.
 
 if [[ "$(uname -s)" != "Linux" ]]; then
   echo "This setup script is for the Ubuntu server, not the development PC."
@@ -26,6 +26,7 @@ python3 -m venv .venv
 
 if command -v npm >/dev/null; then
   (cd frontend && npm install && npm run build)
+  sudo npm install -g typescript
 else
   echo "npm not found; install Node.js and run: cd frontend && npm install && npm run build"
   exit 1

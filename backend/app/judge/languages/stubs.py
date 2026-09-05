@@ -15,15 +15,6 @@ class _StubAdapter(LanguageAdapter):
         raise NotImplementedError(f"{self.id} adapter is a reserved stub")
 
 
-class JavascriptAdapter(_StubAdapter):
-    id = "javascript"
-    display_name = "JavaScript (Node)"
-    source_filename = "solution.js"
-
-    def detect(self) -> bool:
-        return shutil.which("node") is not None
-
-
 class GoAdapter(_StubAdapter):
     id = "go"
     display_name = "Go"

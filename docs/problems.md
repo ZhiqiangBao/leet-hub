@@ -25,7 +25,8 @@ problems/<slug>/
     python3.py
     c.c
     cpp17.cpp
-    javascript.js    # 可选；该语言未实现评测时仅为占位
+    javascript.js
+    typescript.ts
     go.go
     rust.rs
     zig.zig
@@ -40,6 +41,8 @@ problems/<slug>/
 | `starter/python3.py` | 建议 | 打开题目时 Python 编辑器的初始代码 |
 | `starter/c.c` | 建议 | C 初始代码（力扣式自由函数） |
 | `starter/cpp17.cpp` | 建议 | C++ 初始代码 |
+| `starter/javascript.js` | 建议 | JavaScript 初始代码 |
+| `starter/typescript.ts` | 建议 | TypeScript 初始代码 |
 
 ## meta.yaml
 

@@ -100,8 +100,55 @@ def main() -> None:
     expect("python public-only AC", public_ac, "AC")
     if (public_ac.get("details") or {}).get("total") != 3:
         raise SystemExit(f"[FAIL] public-only should run 3 examples, got {public_ac}")
-    na = judge_source("two-sum", "javascript", "class Solution {}")
-    expect("javascript stub NA", na, "NA")
+    AC_JS = """
+class Solution {
+    twoSum(nums, target) {
+        const seen = new Map();
+        for (let i = 0; i < nums.length; i++) {
+            const need = target - nums[i];
+            if (seen.has(need)) return [seen.get(need), i];
+            seen.set(nums[i], i);
+        }
+        return [];
+    }
+}
+"""
+    WA_JS = """
+class Solution {
+    twoSum(nums, target) {
+        return [0, 0];
+    }
+}
+"""
+    AC_TS = """
+class Solution {
+    twoSum(nums: number[], target: number): number[] {
+        const seen = new Map<number, number>();
+        for (let i = 0; i < nums.length; i++) {
+            const need = target - nums[i];
+            const j = seen.get(need);
+            if (j !== undefined) return [j, i];
+            seen.set(nums[i], i);
+        }
+        return [];
+    }
+}
+"""
+    js = next(x for x in language_status() if x["id"] == "javascript")
+    if js["available"]:
+        expect("javascript AC", judge_source("two-sum", "javascript", AC_JS), "AC")
+        expect("javascript WA", judge_source("two-sum", "javascript", WA_JS), "WA")
+        expect("javascript CE", judge_source("two-sum", "javascript", "class Solution { twoSum("), "CE")
+    else:
+        print("[SKIP] javascript not available here; Ubuntu host with node will run JS judging")
+
+    ts = next(x for x in language_status() if x["id"] == "typescript")
+    if ts["available"]:
+        expect("typescript AC", judge_source("two-sum", "typescript", AC_TS), "AC")
+        expect("typescript WA", judge_source("two-sum", "typescript", WA_JS), "WA")
+        expect("typescript CE", judge_source("two-sum", "typescript", "class Solution { twoSum("), "CE")
+    else:
+        print("[SKIP] typescript not available here; Ubuntu host with node + tsc will run TS judging")
 
     cpp = next(x for x in language_status() if x["id"] == "cpp17")
     if cpp["available"]:
