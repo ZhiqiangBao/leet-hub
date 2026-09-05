@@ -332,16 +332,16 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--slug", required=True)
     parser.add_argument("--root", default="")
-    parser.add_argument("--all", action="store_true", help="also emit JS/TS/Go/Rust/Zig")
+    parser.add_argument("--core", action="store_true", help="only python3/c/cpp17")
     parser.add_argument("--langs", default="", help="comma-separated language ids")
     args = parser.parse_args()
     root = Path(args.root) if args.root else Path(__file__).resolve().parents[1]
     if args.langs:
         langs = [x.strip() for x in args.langs.split(",") if x.strip()]
-    elif args.all:
-        langs = list(ALL_LANGS)
-    else:
+    elif args.core:
         langs = list(CORE_LANGS)
+    else:
+        langs = list(ALL_LANGS)
     unknown = [x for x in langs if x not in EMITTERS]
     if unknown:
         raise SystemExit(f"unknown langs: {unknown}")

@@ -49,7 +49,7 @@
 
 ## 每题
 
-1. `author`：题面、签名、`.qwen/tmp/<slug>_ref.py`（`solve`）。starter 由 `scripts/write-starters.py` 生成，不要手写。不写 jsonl。
+1. `author`：题面、签名、`.qwen/tmp/<slug>_ref.py`（`solve`）。starter 由 `scripts/write-starters.py` 生成（默认含 JS / TS / Go / Rust / Zig），不要手写。不写 jsonl。
 2. `quality`：查题面（标题、示例自洽、原创、starter、题面示例 vs ref）。不写测例。不通过 → `author` 返工后再 `quality`，不要开 `tests`/`solver`。
 3. `tests`：只读题面造输入；`dump` 用 author 的 `solve` 写 `expected`。
 4. `solver`：只读题面写 `.qwen/tmp/<slug>_solve2.py`。不读 `ref.py`、不读 jsonl。

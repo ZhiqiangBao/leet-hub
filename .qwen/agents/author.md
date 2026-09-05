@@ -50,7 +50,7 @@ disallowedTools:
 python "<ROOT>/scripts/write-starters.py" --slug <slug> --root "<ROOT>"
 ```
 
-看一行 JSON 的 `ok`、`wrote`。`ok` 必须为 true，且含 `python3`、`c`、`cpp17`。不要把 starter 正文贴进对话。改了签名必须再跑一遍。
+看一行 JSON 的 `ok`、`wrote`。`ok` 必须为 true，且含 `python3`、`c`、`cpp17`（默认还会写 JS / TS / Go / Rust / Zig）。不要把 starter 正文贴进对话。改了签名必须再跑一遍。
 
 ## 回给主编
 

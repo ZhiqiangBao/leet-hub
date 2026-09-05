@@ -18,12 +18,12 @@
 
 ### 现状
 
-已有 11 题（3 道种子题 + 后续原创题）。出题流程见 [problems.md](problems.md)。种子题的**提交隐藏测例**仍偏少（两数之和隐藏仅 1 条），未按 skill 扩到 ≥20。
+已有 11 题（3 道种子题 + 后续原创题）。出题流程见 [problems.md](problems.md)。种子题隐藏测例已扩到 ≥20。后续原创题继续按词表加。
 
 ### 做法
 
 - 在能 `git push` 的电脑上新增 `problems/<slug>/`，推送后评测主机 `bash scripts/update-from-github.sh`。
-- 每题至少：题面、签名、公开测例 2～3 条（`hidden: false`）、不少于 20 条隐藏测例（`hidden: true`）、当前可评测语言的空 starter（与力扣一样，不要占位 `return`）。
+- 每题至少：题面、签名、公开测例 2～3 条（`hidden: false`）、不少于 20 条隐藏测例（`hidden: true`）。starter 用 `scripts/write-starters.py` 从签名生成（含尚未可评测的 JS / TS / Go / Rust / Zig 空模板）。
 - 签名与力扣一致，便于对照；C 按自由函数展开（指针 + 长度 / `returnSize`）。
 - 网页「管理」只作应急。不要 Ubuntu 改盘与 GitHub 同时改同一题。
 
@@ -47,7 +47,7 @@
 
 ## 5. 其余语言适配器
 
-可评测仍只有 Python 3、C、C++20。JavaScript / Go / Rust / Zig 是桩，提交为 `NA`。TypeScript 尚未登记（无适配器、无 starter 后缀）。写法见 [adapters.md](adapters.md)；主机装工具链见 [server.md](server.md)。
+可评测仍只有 Python 3、C、C++20。JavaScript / Go / Rust / Zig 是桩，提交为 `NA`。TypeScript **适配器尚未登记**（各题已有 `starter/typescript.ts`，语言列表还没有这一项）。写法见 [adapters.md](adapters.md)；主机装工具链见 [server.md](server.md)。
 
 计划接入（评测机 Ubuntu x64；压缩包体积如下，解压后更大）：
 
@@ -59,9 +59,9 @@
 | Zig（`zig`） | 官方 tarball | **0.16.0** linux x86_64 **53MiB** | 已有桩。以评测机上的 Zig 版本写 `std.json`。 |
 | Rust（`rust`） | `rustup` **minimal** | 约 **200–300 MB** | 已有桩。只要 `rustc`，不要 docs / clippy。JSON 用内置小型解析，禁止 `cargo add`。 |
 
-TypeScript 接口与 JS 对齐：`class Solution { method(...) { ... } }`，语言 id `typescript`，源文件 `solution.ts`，starter `starter/typescript.ts`。前端 Monaco 已有 TS worker，下拉框补标签即可。`_starter_ext` 与 `ADAPTERS` 要加这一项。
+TypeScript 接口与 JS 对齐：`class Solution { method(...) { ... } }`，语言 id `typescript`，源文件 `solution.ts`。前端 Monaco 已有 TS worker，下拉框补标签即可。`ADAPTERS` 要加这一项。
 
-建议实现顺序：先 Node（JS，再 TS，增量小）→ Go → Zig → Rust（磁盘最大）。每接入一种：适配器 `implemented = True`、各题 starter、主机安装编译器、`GET /api/languages` 该项可用、两数之和 AC/WA 各一次。
+建议实现顺序：先 Node（JS，再 TS，增量小）→ Go → Zig → Rust（磁盘最大）。每接入一种：适配器 `implemented = True`、主机安装编译器、`GET /api/languages` 该项可用、两数之和 AC/WA 各一次。各题空 starter 已由 `write-starters.py` 生成，不必再手补。
 
 ## 不做或后置
 
@@ -73,13 +73,12 @@ TypeScript 接口与 JS 对齐：`class Solution { method(...) { ... } }`，语�
 
 ## 尚未完成
 
-- 三道种子题的提交隐藏测例扩到 ≥20。
-- 按词表继续加原创题。
-- JavaScript / TypeScript / Go / Rust / Zig 做成可评测语言（TS 从零接；其余把桩做成真适配器）。
+- 按词表继续加原创题（隐藏测例 ≥20）。
+- JavaScript / TypeScript / Go / Rust / Zig 做成可评测语言（TS 从零接适配器；其余把桩做成真适配器。starter 已有）。
 - 仓库仍为公开；SSH 已通，随时可改私密。
 
 ## 建议实现顺序
 
-1. 按词表加题，隐藏测例不少于 20 条；种子题隐藏测例补到 ≥20。
+1. 按词表加题，隐藏测例不少于 20 条。
 2. Node：JavaScript 适配器，再接 TypeScript（共用运行时）。
 3. Go、Zig、Rust 适配器（按磁盘与工作量）。

@@ -28,6 +28,7 @@ const monacoLang: Record<string, string> = {
   c: "c",
   cpp17: "cpp",
   javascript: "javascript",
+  typescript: "typescript",
   go: "go",
   rust: "rust",
   zig: "plaintext",

@@ -3,6 +3,7 @@ export const LANGUAGE_LABELS: Record<string, string> = {
   c: "C",
   cpp17: "C++20",
   javascript: "JavaScript (Node)",
+  typescript: "TypeScript",
   go: "Go",
   rust: "Rust",
   zig: "Zig",

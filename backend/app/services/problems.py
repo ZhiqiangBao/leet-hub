@@ -197,6 +197,7 @@ def _starter_ext(lang: str) -> str:
         "go": ".go",
         "rust": ".rs",
         "zig": ".zig",
+        "typescript": ".ts",
     }.get(lang, ".txt")
 
 

@@ -77,7 +77,7 @@ class LanguageAdapter:
 
 1. 实现类：`implemented = True`，写好 `detect` / `wrap` / `compile` / `run_argv`。可从 `stubs.py` 拆到 `backend/app/judge/languages/<id>.py`。
 2. 在 [`languages/__init__.py`](../backend/app/judge/languages/__init__.py) 的 `ADAPTERS` 中注册（桩已占位，替换类即可）。
-3. [`_starter_ext`](../backend/app/services/problems.py) 已有 `.js` / `.go` / `.rs` / `.zig`。TypeScript 接入时补 `.ts`。新语言 id 在此补后缀。
+3. [`_starter_ext`](../backend/app/services/problems.py) 已有 `.js` / `.ts` / `.go` / `.rs` / `.zig`。新语言 id 在此补后缀。
 4. 各题 `problems/<slug>/starter/<id>.<后缀>`。
 5. [`CodeEditor.vue`](../frontend/src/components/CodeEditor.vue) 的 `monacoLang`：`javascript`→`javascript`，`typescript`→`typescript`，`go`→`go`，`rust`→`rust`，`zig` 可用 `plaintext`。
 6. 推送仓库；评测主机 `./scripts/update-from-github.sh`（改了 frontend 会重建）。主机安装对应编译器。

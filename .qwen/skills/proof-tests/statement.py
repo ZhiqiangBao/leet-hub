@@ -167,6 +167,11 @@ def check_statement(root: Path, slug: str) -> dict:
         "python3": root / "problems" / slug / "starter" / "python3.py",
         "c": root / "problems" / slug / "starter" / "c.c",
         "cpp17": root / "problems" / slug / "starter" / "cpp17.cpp",
+        "javascript": root / "problems" / slug / "starter" / "javascript.js",
+        "typescript": root / "problems" / slug / "starter" / "typescript.ts",
+        "go": root / "problems" / slug / "starter" / "go.go",
+        "rust": root / "problems" / slug / "starter" / "rust.rs",
+        "zig": root / "problems" / slug / "starter" / "zig.zig",
     }
     out: dict = {
         "ok": True,

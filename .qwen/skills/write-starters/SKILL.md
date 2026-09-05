@@ -16,6 +16,6 @@ priority: 20
 python "scripts/write-starters.py" --slug <slug>
 ```
 
-默认只写 `python3` / `c` / `cpp17`。一行 JSON：`ok`、`wrote`。`ok` 为 true 即可。不要把 starter 正文贴进对话。
+默认写出全部语言（Python / C / C++ / JS / TS / Go / Rust / Zig）。一行 JSON：`ok`、`wrote`。`ok` 为 true 即可。不要把 starter 正文贴进对话。
 
-接 JS / TS / Go / Rust / Zig 时再加 `--all`。改了签名必须重跑，不要手改生成结果。
+只要三语时加 `--core`。改了签名必须重跑，不要手改生成结果。

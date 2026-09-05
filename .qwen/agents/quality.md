@@ -26,7 +26,7 @@ disallowedTools:
 路径一律用派工给出的项目根绝对路径拼接。
 
 1. `problems/<slug>/statement.md`、`signature.yaml`、`meta.yaml`
-2. 确认 `starter/python3.py`、`starter/c.c`、`starter/cpp17.cpp` 存在（由 `scripts/write-starters.py` 生成；缺则报 `[starter]`，让 author 重跑脚本，不要自己改 starter）
+2. 确认 starter 已由脚本生成（Python / C / C++ 必有；JS / TS / Go / Rust / Zig 也应有）。缺则报 `[starter]`，让 author 重跑 `write-starters.py`，不要自己改 starter。
 3. `rules/bank.md`、`rules/files.md`、`rules/judge.md`
 4. 运行（不要加会打印示例的参数）：
 
