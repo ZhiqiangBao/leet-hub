@@ -1,25 +1,69 @@
+<div align="center">
+
 # Leet Hub
 
-家庭局域网评测站。题目以 LeetCode 函数形式作答（`class Solution`），由一台 Ubuntu 主机提供网页并判题。
+**家里那台 Ubuntu，就是评测机。**
 
-仓库：https://github.com/ZhiqiangBao/leet-hub
+局域网浏览器打开即可做题。力扣式 `class Solution`，隐藏测例提交，耗时榜按语言分开。
 
-判题使用 Ubuntu 系统自带的 `/usr/bin/python3`、`/usr/bin/gcc` 与 `/usr/bin/g++`。局域网内其他设备用浏览器访问 `http://<Ubuntu局域网IP>:8080`。答题端无需安装编译器。
+[仓库](https://github.com/ZhiqiangBao/leet-hub)
+·
+[服务端](docs/server.md)
+·
+[客户端](docs/client.md)
+·
+[出题](docs/problems.md)
+·
+[规划](docs/roadmap.md)
 
-JavaScript、Go、Rust、Zig 已预留适配器桩（尚未可评测）。TypeScript 计划与 Node 共用运行时，见 [roadmap.md](docs/roadmap.md)。
+```
+  手机 / Windows / Mac                 Ubuntu
+ ┌─────────────────────┐            ┌──────────────────────┐
+ │  题面 · 编辑器 · 榜   │  LAN :8080 │  FastAPI · 沙箱判题    │
+ │  浅色 / 深色  切换    │ ─────────► │  python3  gcc  g++    │
+ └─────────────────────┘            │  题库真源 = GitHub     │
+                                    └──────────────────────┘
+         答题端不装编译器                    判题只发生在这里
+```
+
+</div>
+
+## 现在能跑什么
+
+| | 语言 | 状态 |
+| :--- | :--- | :--- |
+| ● | Python 3 · C · C++20 | **可评测**（主机上的 `/usr/bin/python3`、`gcc`、`g++`） |
+| ○ | JavaScript · Go · Rust · Zig | 空模板已有，适配器仍是桩，下拉框灰色，提交为 `NA` |
+| ○ | TypeScript | 空模板已有，适配器尚未登记，语言列表里没有这一项 |
+
+题面支持 `$…$` 公式（KaTeX）。测试只跑公开示例、不计分；提交跑全部隐藏测例、进该语言耗时榜。
+
+浏览器访问：
+
+```text
+http://<Ubuntu局域网IP>:8080
+```
+
+IP 用评测机上的 `hostname -I`。必须带端口。答题端不装 Python / gcc。
 
 ## 文档
 
-| 文档 | 内容 |
-| --- | --- |
-| [在磁盘上编写题目](docs/problems.md) | `problems/` 目录、题面与测试集写法、拉取后生效 |
-| [服务端操作](docs/server.md) | Ubuntu 部署、服务、更新、接入语言时主机侧步骤、协同开发 |
-| [客户端操作](docs/client.md) | 浏览器注册、做题、提交、网页管理 |
-| [接入语言](docs/languages.md) | 入口：主机装工具链与仓库改代码 |
-| [编写语言适配器](docs/adapters.md) | `LanguageAdapter`、驱动协议、JS / TS / Go / Rust / Zig 写法 |
-| [后续改进方向](docs/roadmap.md) | 加题、隐藏测例、TypeScript 与其余语言适配器 |
+| | |
+| :--- | :--- |
+| [磁盘出题](docs/problems.md) | `problems/` 目录、题面与测试集、starter 脚本 |
+| [服务端](docs/server.md) | Ubuntu 部署、systemd、从 GitHub 更新、协同 |
+| [客户端](docs/client.md) | 注册、做题、测试 / 提交、网页管理 |
+| [接入语言](docs/languages.md) | 主机装工具链 + 仓库改代码 |
+| [语言适配器](docs/adapters.md) | `LanguageAdapter`、驱动协议、JS / TS / Go / Rust / Zig |
+| [规划](docs/roadmap.md) | 加题、其余语言真正可评测 |
 
-## 快速开始（评测主机）
+出题流水线见 [`QWEN.md`](QWEN.md)。starter 不要手写，签名落盘后：
+
+```powershell
+python scripts/write-starters.py --slug <slug>
+```
+
+## 评测主机：装起来
 
 ```bash
 git clone https://github.com/ZhiqiangBao/leet-hub.git
@@ -28,11 +72,16 @@ chmod +x scripts/setup-ubuntu.sh scripts/run-ubuntu.sh scripts/update-from-githu
 ./scripts/setup-ubuntu.sh
 ```
 
-服务名：`local-leet`，端口 `8080`。完整步骤见 [服务端操作](docs/server.md)。
+服务名 `local-leet`，端口 **8080**。细节在 [server.md](docs/server.md)。代码推上 GitHub 之后，主机只跑：
 
-### 关闭服务
+```bash
+./scripts/update-from-github.sh
+```
 
-后台（systemd，关终端也不停）：
+<details>
+<summary>关掉 / 前台看日志</summary>
+
+后台（关终端也不停）：
 
 ```bash
 sudo systemctl stop local-leet
@@ -40,18 +89,19 @@ sudo systemctl stop local-leet
 
 开机不再自启：`sudo systemctl disable local-leet`。停用并立刻关闭：`sudo systemctl disable --now local-leet`。
 
-前台日志窗口（关闭窗口 = 停止整个服务）：
+前台日志窗口（关窗口 = 停站）：
 
 ```bash
-chmod +x scripts/serve-window.sh
 ./scripts/serve-window.sh
 ```
 
-会先 `stop` 已在跑的 `local-leet`，再弹出带日志的终端。关掉该窗口或在其中 `Ctrl+C` 即结束网站与判题。无图形界面时在当前终端前台运行，效果相同。
+会先 `stop` 已在跑的 `local-leet`，再弹出带日志的终端。`Ctrl+C` 或关窗口即结束。无图形界面时在当前终端前台跑，效果相同。
 
-## 开发环境
+</details>
 
-开发机用于修改本仓库，不作为家庭局域网评测机。多人协作在 GitHub 上进行，评测主机只负责拉取部署，见 [服务端操作 · 协同开发](docs/server.md)。
+## 开发机
+
+改仓库用，不当家里那台评测机。协作走 GitHub，Ubuntu 只 `pull` 部署，见 [协同开发](docs/server.md)。
 
 ```powershell
 python -m venv .venv
