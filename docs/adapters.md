@@ -8,7 +8,7 @@
 
 基类：[`backend/app/judge/base.py`](../backend/app/judge/base.py)。  
 已实现：[`python3.py`](../backend/app/judge/languages/python3.py)、[`c11.py`](../backend/app/judge/languages/c11.py)、[`cpp17.py`](../backend/app/judge/languages/cpp17.py)。  
-桩：[`stubs.py`](../backend/app/judge/languages/stubs.py)（`javascript` / `go` / `rust` / `zig`）。
+桩：[`stubs.py`](../backend/app/judge/languages/stubs.py)（`javascript` / `go` / `rust` / `zig`）。TypeScript 尚未登记，规划见 [roadmap.md](roadmap.md)。
 
 工具链装在评测主机；适配器代码进 Git 后由主机拉取。见 [server.md](server.md)。题目格式见 [problems.md](problems.md)。
 
@@ -77,9 +77,9 @@ class LanguageAdapter:
 
 1. 实现类：`implemented = True`，写好 `detect` / `wrap` / `compile` / `run_argv`。可从 `stubs.py` 拆到 `backend/app/judge/languages/<id>.py`。
 2. 在 [`languages/__init__.py`](../backend/app/judge/languages/__init__.py) 的 `ADAPTERS` 中注册（桩已占位，替换类即可）。
-3. [`_starter_ext`](../backend/app/services/problems.py) 已有 `.js` / `.go` / `.rs` / `.zig`。新语言 id 在此补后缀。
+3. [`_starter_ext`](../backend/app/services/problems.py) 已有 `.js` / `.go` / `.rs` / `.zig`。TypeScript 接入时补 `.ts`。新语言 id 在此补后缀。
 4. 各题 `problems/<slug>/starter/<id>.<后缀>`。
-5. [`CodeEditor.vue`](../frontend/src/components/CodeEditor.vue) 的 `monacoLang`：`javascript`→`javascript`，`go`→`go`，`rust`→`rust`，`zig` 可用 `plaintext`。
+5. [`CodeEditor.vue`](../frontend/src/components/CodeEditor.vue) 的 `monacoLang`：`javascript`→`javascript`，`typescript`→`typescript`，`go`→`go`，`rust`→`rust`，`zig` 可用 `plaintext`。
 6. 推送仓库；评测主机 `./scripts/update-from-github.sh`（改了 frontend 会重建）。主机安装对应编译器。
 7. `GET /api/languages` 中该项 `implemented`、`runtime_detected`、`available` 均为 true。用两数之和提交 AC、WA 各一次。`scripts/selftest.py` 可加用例；开发机无编译器则跳过。
 
@@ -96,11 +96,21 @@ class LanguageAdapter:
 - 用户：`class Solution { twoSum(nums, target) { ... } }`。驱动 `JSON.parse` 每行，`new Solution()` 后调用 `signature.method`。
 - 不要 `require` 外部 npm 包。
 
+### TypeScript（`typescript`）
+
+规划中，尚无适配器。与 JavaScript 共用主机上的 Node。
+
+- `detect`：`shutil.which("node")` 且能调用 `tsc`（`npm install -g typescript`，或固定路径的 `tsc`）。
+- `source_filename`：`solution.ts`。`compile`：`tsc` 输出 JS（无外部 `@types` / npm 包），`run_argv`：`[node, "solution.js"]`。
+- 用户：`class Solution { twoSum(nums: number[], target: number) { ... } }`，驱动形态与 JS 相同。
+- 不要 `import` 外部包。类型注解仅服务 `tsc`，测例仍是 JSON。
+
 ### Go（`go`）
 
 - `detect`：`shutil.which("go")`。主机：`sudo apt install golang-go`。
 - 在 `workdir` 写最小 `go.mod`（`module solution`），`go build -o program solution.go`，`GOPROXY=off`。
-- `package main`。驱动用 `encoding/json`。方法若要导出须大写，驱动里写死对 `signature.method` 的调用。
+- 用户代码已含 `package main`；驱动只拼在同一文件后面，不要再写一行 `package`。
+- 驱动用 `encoding/json`。方法若要导出须大写，驱动里写死对 `signature.method` 的调用。
 - `go.mod` 不引用外部 module。
 
 ### Rust（`rust`）

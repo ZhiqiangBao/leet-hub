@@ -1,6 +1,6 @@
 class Solution {
 public:
-    int longestKValidSubstring(string& s, int k) {
-
+    int longestKValidSubstring(string s, int k) {
+        
     }
 };

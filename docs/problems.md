@@ -105,7 +105,7 @@ compare: any_order
 
 ## starter
 
-与力扣相同：只给出类/函数签名，函数体留空，不要写 `return {}`、`return false` 等占位返回值。Python 空缩进块是语法错误，力扣编辑器里用户会立刻填写；本站提交空 starter 得到 `CE` 即可，评测机没有额外开销。C / C++ 非 void 函数空函数体与力扣一致，未写 `return` 时为 `CE` 或运行期未定义行为，按编译器输出判定。
+与力扣相同：只给出类/函数签名，函数体留空，不要写 `return {}`、`return false` 等占位返回值。由 `scripts/write-starters.py` 根据 `signature.yaml` 生成，不要手抄。Python 空缩进块是语法错误，提交空 starter 得到 `CE` 即可。
 
 不要在用户代码里定义 `main`，否则与驱动中的 `main` 冲突，结果为 `CE`。
 

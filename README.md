@@ -6,7 +6,7 @@
 
 判题使用 Ubuntu 系统自带的 `/usr/bin/python3`、`/usr/bin/gcc` 与 `/usr/bin/g++`。局域网内其他设备用浏览器访问 `http://<Ubuntu局域网IP>:8080`。答题端无需安装编译器。
 
-JavaScript、Go、Rust、Zig 已预留适配器，实现步骤见文档。
+JavaScript、Go、Rust、Zig 已预留适配器桩（尚未可评测）。TypeScript 计划与 Node 共用运行时，见 [roadmap.md](docs/roadmap.md)。
 
 ## 文档
 
@@ -16,8 +16,8 @@ JavaScript、Go、Rust、Zig 已预留适配器，实现步骤见文档。
 | [服务端操作](docs/server.md) | Ubuntu 部署、服务、更新、接入语言时主机侧步骤、协同开发 |
 | [客户端操作](docs/client.md) | 浏览器注册、做题、提交、网页管理 |
 | [接入语言](docs/languages.md) | 入口：主机装工具链与仓库改代码 |
-| [编写语言适配器](docs/adapters.md) | `LanguageAdapter`、驱动协议、JS / Go / Rust / Zig 写法 |
-| [后续改进方向](docs/roadmap.md) | 加题与隐藏测例、其余语言适配器 |
+| [编写语言适配器](docs/adapters.md) | `LanguageAdapter`、驱动协议、JS / TS / Go / Rust / Zig 写法 |
+| [后续改进方向](docs/roadmap.md) | 加题、隐藏测例、TypeScript 与其余语言适配器 |
 
 ## 快速开始（评测主机）
 

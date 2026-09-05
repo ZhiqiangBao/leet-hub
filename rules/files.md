@@ -11,12 +11,10 @@ problems/<slug>/
   meta.yaml
   statement.md
   signature.yaml
-  starter/python3.py
-  starter/c.c
-  starter/cpp17.cpp
+  starter/          # 不要手写；跑 scripts/write-starters.py
 ```
 
-`tests.jsonl` 由 `tests` 写，`author` 不创建、不修改。不必写 JS / Go / Rust / Zig starter。
+`tests.jsonl` 由 `tests` 写，`author` 不创建、不修改。不必手写 JS / Go / Rust / Zig starter（脚本加 `--all` 才会生成）。
 
 ## meta.yaml
 
@@ -58,7 +56,15 @@ compare: exact   # 下标集合无序时用 any_order
 
 ## starter
 
-空函数体。禁止 `main`、禁止占位 `return`。
+空函数体。禁止 `main`、禁止占位 `return`。**不要手写**：`signature.yaml` 落盘后执行
+
+```powershell
+python "scripts/write-starters.py" --slug <slug>
+```
+
+默认生成 `starter/python3.py`、`starter/c.c`、`starter/cpp17.cpp`。改签名后重跑。不要把生成结果贴进对话。
+
+生成形态如下（供对照，不是让你手抄）：
 
 Python：
 

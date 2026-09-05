@@ -95,6 +95,9 @@ def parse_args_blob(blob: str, n_params: int):
     if n_params <= 0:
         return None
     if n_params == 1:
+        payload = blob.split("=", 1)[-1].strip()
+        if payload.startswith("[") and lists:
+            return [lists[0]]
         if strings:
             return [strings[0]]
         if lists:

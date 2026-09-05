@@ -4,7 +4,7 @@
 
 | 行名 | 路径 | 谁写 |
 |---|---|---|
-| 题目 | `problems/<slug>/`（`meta.yaml`、`statement.md`、`signature.yaml`、`starter/`） | `author` |
+| 题目 | `problems/<slug>/`（`meta.yaml`、`statement.md`、`signature.yaml`、`starter/`） | `author` 写题面与签名；`scripts/write-starters.py` 写 `starter/` |
 | 参考解（oracle） | `.qwen/tmp/<slug>_ref.py`（`def solve(*args)`） | `author`；`dump` / `fill_expected` 填 expected |
 | 答题者解 | `.qwen/tmp/<slug>_solve2.py` | `solver`；`check.py` 对照 expected |
 | 测例 | `problems/<slug>/tests.jsonl` | `tests` 写 args；脚本写 expected |
