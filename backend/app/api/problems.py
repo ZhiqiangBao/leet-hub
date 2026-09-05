@@ -112,10 +112,7 @@ def get_problem(slug: str, db: Session = Depends(get_db), user: User = Depends(g
 
 
 def _starter_source(slug: str, language: str) -> str:
-    problem = bank.get(slug)
-    if language in problem.starter:
-        return problem.starter[language]
-    return next(iter(problem.starter.values()), "")
+    return bank.get(slug).starter.get(language, "")
 
 
 @router.get("/problems/{slug}/draft", response_model=DraftOut)

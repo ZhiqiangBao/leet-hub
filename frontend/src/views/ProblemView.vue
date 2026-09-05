@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import CodeEditor from "../components/CodeEditor.vue";
 import { renderStatement } from "../markdown";
@@ -106,7 +106,9 @@ const route = useRoute();
 const problem = ref<ProblemDetail | null>(null);
 const languages = ref<Language[]>([]);
 const language = ref("python3");
-const source = ref("");
+const buffers = reactive<Record<string, string>>({});
+const saved = reactive<Record<string, string>>({});
+const fetched = new Set<string>();
 const busy = ref<"test" | "submit" | null>(null);
 const resultKind = ref<"test" | "submit">("submit");
 const result = ref<(Submission | RunResult) | null>(null);
@@ -114,12 +116,15 @@ const ranking = ref<Ranking | null>(null);
 const leftTab = ref<"desc" | "rank">("desc");
 const draftHint = ref("草稿会自动保存");
 const ready = ref(false);
-const draftCache = new Map<string, string>();
-const savedAt = new Map<string, string>();
-let lastSaved = "";
 let saveTimer = 0;
-let switchGen = 0;
-let applying = false;
+let loadGen = 0;
+
+const source = computed({
+  get: () => buffers[language.value] ?? "",
+  set: (value) => {
+    buffers[language.value] = value;
+  },
+});
 
 const details = computed(() => (result.value?.details || null) as Record<string, unknown> | null);
 const cases = computed(
@@ -142,12 +147,9 @@ watch(() => route.params.slug, load);
 watch(language, (next, prev) => {
   if (!ready.value || !problem.value || next === prev) return;
   window.clearTimeout(saveTimer);
-  const prevText = source.value;
-  if (prev) {
-    draftCache.set(prev, prevText);
-    if (prevText !== lastSaved) void flushDraft(prev, prevText);
-  }
-  void loadSource(next);
+  if (buffers[next] === undefined) buffers[next] = starterOf(next);
+  if (prev) void flushDraft(prev);
+  void hydrate(next);
   if (leftTab.value === "rank") void loadRanking();
   else ranking.value = null;
 });
@@ -155,10 +157,12 @@ watch(leftTab, (tab) => {
   if (tab === "rank") void loadRanking();
 });
 watch(source, () => {
-  if (!ready.value || applying) return;
+  if (!ready.value) return;
+  const lang = language.value;
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
-    void flushDraft();
+    if (language.value !== lang) return;
+    void flushDraft(lang);
   }, 1200);
 });
 
@@ -168,79 +172,75 @@ function difficultyLabel(d: string) {
 
 function starterOf(lang: string) {
   if (!problem.value) return "";
-  return problem.value.starter[lang] || Object.values(problem.value.starter)[0] || "";
+  return problem.value.starter[lang] || "";
 }
 
-function setSource(text: string, savedText: string) {
-  applying = true;
-  source.value = text;
-  lastSaved = savedText;
-  applying = false;
-}
-
-async function loadSource(lang: string) {
+async function hydrate(lang: string) {
   if (!problem.value) return;
   const slug = problem.value.slug;
-  const gen = ++switchGen;
-  const cached = draftCache.get(lang);
-  if (cached !== undefined) {
-    setSource(cached, savedAt.get(lang) ?? "");
-  } else {
-    const starter = starterOf(lang);
-    setSource(starter, starter);
+  const starter = starterOf(lang);
+  if (buffers[lang] === undefined) buffers[lang] = starter;
+  if (fetched.has(lang)) {
+    draftHint.value = buffers[lang] === starter ? "使用模板，编辑后自动保存" : "已恢复上次离开时的代码";
+    return;
   }
-  draftHint.value = cached ? "已恢复上次离开时的代码" : "使用模板，编辑后自动保存";
+  const gen = loadGen;
   try {
     const draft = await Problems.getDraft(slug, lang);
-    if (gen !== switchGen || language.value !== lang || problem.value?.slug !== slug) return;
-    savedAt.set(lang, draft.source);
-    if (source.value === lastSaved) {
-      draftCache.set(lang, draft.source);
-      setSource(draft.source, draft.source);
+    if (gen !== loadGen || problem.value?.slug !== slug || draft.language !== lang) return;
+    fetched.add(lang);
+    const untouched = buffers[lang] === starter || buffers[lang] === undefined;
+    if (untouched) {
+      buffers[lang] = draft.source;
+      saved[lang] = draft.source;
     }
-    draftHint.value = draft.from_starter ? "使用模板，编辑后自动保存" : "已恢复上次离开时的代码";
+    if (language.value === lang) {
+      draftHint.value = draft.from_starter ? "使用模板，编辑后自动保存" : "已恢复上次离开时的代码";
+    }
   } catch {
-    if (gen !== switchGen || language.value !== lang) return;
-    const fallback = starterOf(lang);
-    if (source.value === lastSaved) setSource(fallback, fallback);
+    if (gen !== loadGen || problem.value?.slug !== slug) return;
+    fetched.add(lang);
+    if (buffers[lang] === undefined) buffers[lang] = starter;
   }
 }
 
-async function flushDraft(lang = language.value, text = source.value) {
+async function flushDraft(lang = language.value) {
   if (!problem.value) return;
-  if (lang === language.value && text === lastSaved) return;
+  const text = buffers[lang] ?? "";
+  if (text === (saved[lang] ?? "")) return;
+  const slug = problem.value.slug;
   try {
-    await Problems.saveDraft(problem.value.slug, lang, text);
-    draftCache.set(lang, text);
-    savedAt.set(lang, text);
-    if (lang === language.value && text === source.value) lastSaved = text;
-    draftHint.value = "草稿已保存";
+    await Problems.saveDraft(slug, lang, text);
+    if (problem.value?.slug !== slug) return;
+    saved[lang] = text;
+    if (language.value === lang) draftHint.value = "草稿已保存";
   } catch {
-    draftHint.value = "草稿保存失败";
+    if (language.value === lang) draftHint.value = "草稿保存失败";
   }
 }
 
 async function resetStarter() {
   const lang = language.value;
-  const starter = starterOf(lang);
-  setSource(starter, "");
-  draftCache.set(lang, starter);
-  await flushDraft(lang, starter);
+  buffers[lang] = starterOf(lang);
+  saved[lang] = "";
+  await flushDraft(lang);
   draftHint.value = "已恢复模板";
 }
 
 async function load() {
   ready.value = false;
   window.clearTimeout(saveTimer);
-  switchGen += 1;
-  draftCache.clear();
-  savedAt.clear();
+  loadGen += 1;
+  fetched.clear();
   ranking.value = null;
+  for (const key of Object.keys(buffers)) delete buffers[key];
+  for (const key of Object.keys(saved)) delete saved[key];
   const slug = String(route.params.slug);
   problem.value = await Problems.get(slug);
   result.value = null;
   leftTab.value = "desc";
-  await loadSource(language.value);
+  buffers[language.value] = starterOf(language.value);
+  await hydrate(language.value);
   ready.value = true;
 }
 
@@ -260,12 +260,12 @@ async function loadRanking() {
 
 async function runTests() {
   if (!problem.value) return;
-  await flushDraft();
+  await flushDraft(language.value);
   busy.value = "test";
   result.value = null;
   resultKind.value = "test";
   try {
-    result.value = await Problems.run(problem.value.slug, language.value, source.value);
+    result.value = await Problems.run(problem.value.slug, language.value, buffers[language.value] ?? "");
   } catch (err) {
     result.value = {
       kind: "test",
@@ -282,12 +282,12 @@ async function runTests() {
 
 async function submit() {
   if (!problem.value) return;
-  await flushDraft();
+  await flushDraft(language.value);
   busy.value = "submit";
   result.value = null;
   resultKind.value = "submit";
   try {
-    let current = await Problems.submit(problem.value.slug, language.value, source.value);
+    let current = await Problems.submit(problem.value.slug, language.value, buffers[language.value] ?? "");
     result.value = current;
     for (let i = 0; i < 80 && (current.status === "queued" || current.status === "running"); i++) {
       await new Promise((r) => setTimeout(r, 350));
