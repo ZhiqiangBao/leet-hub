@@ -16,12 +16,13 @@
         </div>
         <div class="md" v-html="html"></div>
       </template>
-      <div class="rank-box" v-else-if="ranking">
-        <p class="hint" v-if="ranking.mine">
+      <div class="rank-box" v-else>
+        <p class="hint" v-if="!ranking">正在加载排行…</p>
+        <p class="hint" v-else-if="ranking.mine">
           当前语言你第 {{ ranking.mine.rank }} / {{ ranking.total }} 名 · 最好 {{ ranking.mine.time_ms }} ms
         </p>
         <p class="hint" v-else>当前语言还没有 AC，提交通过后计入排行（测试不计成绩）。</p>
-        <table v-if="ranking.entries.length">
+        <table v-if="ranking?.entries.length">
           <thead>
             <tr>
               <th>名次</th>
@@ -113,8 +114,12 @@ const ranking = ref<Ranking | null>(null);
 const leftTab = ref<"desc" | "rank">("desc");
 const draftHint = ref("草稿会自动保存");
 const ready = ref(false);
+const draftCache = new Map<string, string>();
+const savedAt = new Map<string, string>();
 let lastSaved = "";
 let saveTimer = 0;
+let switchGen = 0;
+let applying = false;
 
 const details = computed(() => (result.value?.details || null) as Record<string, unknown> | null);
 const cases = computed(
@@ -134,14 +139,23 @@ onBeforeUnmount(() => {
 });
 
 watch(() => route.params.slug, load);
-watch(language, async (next, prev) => {
-  if (!ready.value || !problem.value) return;
-  await flushDraft(prev);
-  await loadSource(next);
-  await loadRanking();
+watch(language, (next, prev) => {
+  if (!ready.value || !problem.value || next === prev) return;
+  window.clearTimeout(saveTimer);
+  const prevText = source.value;
+  if (prev) {
+    draftCache.set(prev, prevText);
+    if (prevText !== lastSaved) void flushDraft(prev, prevText);
+  }
+  void loadSource(next);
+  if (leftTab.value === "rank") void loadRanking();
+  else ranking.value = null;
+});
+watch(leftTab, (tab) => {
+  if (tab === "rank") void loadRanking();
 });
 watch(source, () => {
-  if (!ready.value) return;
+  if (!ready.value || applying) return;
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     void flushDraft();
@@ -157,25 +171,49 @@ function starterOf(lang: string) {
   return problem.value.starter[lang] || Object.values(problem.value.starter)[0] || "";
 }
 
+function setSource(text: string, savedText: string) {
+  applying = true;
+  source.value = text;
+  lastSaved = savedText;
+  applying = false;
+}
+
 async function loadSource(lang: string) {
   if (!problem.value) return;
+  const slug = problem.value.slug;
+  const gen = ++switchGen;
+  const cached = draftCache.get(lang);
+  if (cached !== undefined) {
+    setSource(cached, savedAt.get(lang) ?? "");
+  } else {
+    const starter = starterOf(lang);
+    setSource(starter, starter);
+  }
+  draftHint.value = cached ? "已恢复上次离开时的代码" : "使用模板，编辑后自动保存";
   try {
-    const draft = await Problems.getDraft(problem.value.slug, lang);
-    source.value = draft.source;
-    lastSaved = draft.source;
+    const draft = await Problems.getDraft(slug, lang);
+    if (gen !== switchGen || language.value !== lang || problem.value?.slug !== slug) return;
+    savedAt.set(lang, draft.source);
+    if (source.value === lastSaved) {
+      draftCache.set(lang, draft.source);
+      setSource(draft.source, draft.source);
+    }
     draftHint.value = draft.from_starter ? "使用模板，编辑后自动保存" : "已恢复上次离开时的代码";
   } catch {
-    source.value = starterOf(lang);
-    lastSaved = source.value;
+    if (gen !== switchGen || language.value !== lang) return;
+    const fallback = starterOf(lang);
+    if (source.value === lastSaved) setSource(fallback, fallback);
   }
 }
 
-async function flushDraft(lang = language.value) {
+async function flushDraft(lang = language.value, text = source.value) {
   if (!problem.value) return;
-  if (lang === language.value && source.value === lastSaved) return;
+  if (lang === language.value && text === lastSaved) return;
   try {
-    await Problems.saveDraft(problem.value.slug, lang, source.value);
-    if (lang === language.value) lastSaved = source.value;
+    await Problems.saveDraft(problem.value.slug, lang, text);
+    draftCache.set(lang, text);
+    savedAt.set(lang, text);
+    if (lang === language.value && text === source.value) lastSaved = text;
     draftHint.value = "草稿已保存";
   } catch {
     draftHint.value = "草稿保存失败";
@@ -183,27 +221,39 @@ async function flushDraft(lang = language.value) {
 }
 
 async function resetStarter() {
-  source.value = starterOf(language.value);
-  await flushDraft();
+  const lang = language.value;
+  const starter = starterOf(lang);
+  setSource(starter, "");
+  draftCache.set(lang, starter);
+  await flushDraft(lang, starter);
   draftHint.value = "已恢复模板";
 }
 
 async function load() {
   ready.value = false;
+  window.clearTimeout(saveTimer);
+  switchGen += 1;
+  draftCache.clear();
+  savedAt.clear();
+  ranking.value = null;
   const slug = String(route.params.slug);
   problem.value = await Problems.get(slug);
   result.value = null;
   leftTab.value = "desc";
   await loadSource(language.value);
-  await loadRanking();
   ready.value = true;
 }
 
 async function loadRanking() {
   if (!problem.value) return;
+  const slug = problem.value.slug;
+  const lang = language.value;
   try {
-    ranking.value = await Problems.ranking(problem.value.slug, language.value);
+    const data = await Problems.ranking(slug, lang);
+    if (language.value !== lang || problem.value?.slug !== slug) return;
+    ranking.value = data;
   } catch {
+    if (language.value !== lang || problem.value?.slug !== slug) return;
     ranking.value = null;
   }
 }
