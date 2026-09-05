@@ -2,6 +2,6 @@ package main
 
 type Solution struct{}
 
-func (s *Solution) LongestCommonPrefix(strs []string) string {
+func (sol *Solution) LongestCommonPrefix(strs []string) string {
     
 }

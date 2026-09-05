@@ -248,12 +248,16 @@ def emit_go(sig: dict) -> str:
     args = ", ".join(f"{p['name']} {go_type(p['type'])}" for p in sig["params"])
     ret = go_type(sig["return_type"])
     method = pascal(sig["method"])
+    used = {p["name"] for p in sig["params"]}
+    recv = "sol"
+    if recv in used:
+        recv = "this"
     return (
         f"package main\n"
         f"\n"
         f"type {sig['class_name']} struct{{}}\n"
         f"\n"
-        f"func (s *{sig['class_name']}) {method}({args}) {ret} {{\n"
+        f"func ({recv} *{sig['class_name']}) {method}({args}) {ret} {{\n"
         f"    \n"
         f"}}\n"
     )

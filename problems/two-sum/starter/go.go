@@ -2,6 +2,6 @@ package main
 
 type Solution struct{}
 
-func (s *Solution) TwoSum(nums []int, target int) []int {
+func (sol *Solution) TwoSum(nums []int, target int) []int {
     
 }
