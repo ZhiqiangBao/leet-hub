@@ -1,0 +1,8 @@
+slug: min-groups-bounded-diff
+title: 双约束最少分组
+difficulty: medium
+time_limit_ms: 1000
+memory_limit_mb: 256
+tags:
+  - greedy
+  - sorting

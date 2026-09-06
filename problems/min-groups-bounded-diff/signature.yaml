@@ -1,0 +1,11 @@
+class_name: Solution
+method: minGroups
+params:
+  - name: nums
+    type: List[int]
+  - name: d
+    type: int
+  - name: m
+    type: int
+return_type: int
+compare: exact
