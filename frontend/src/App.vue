@@ -5,7 +5,7 @@
     </button>
     <router-view />
   </div>
-  <div v-else>
+  <div v-else class="app-shell">
     <header class="topbar">
       <router-link class="brand" to="/">Leet Hub</router-link>
       <nav>
