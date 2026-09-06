@@ -1,0 +1,14 @@
+slug: max-bounded-pairs
+title: 和受限的最多配对数
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags: [greedy, sorting, two-pointers]
+n_min: 1
+n_max: 100000
+elem_min: 1
+elem_max: 1000000
+param_bounds:
+  hi:
+    min: 1
+    max: 2000000

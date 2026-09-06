@@ -1,0 +1,11 @@
+slug: squarefree-range-count
+title: 区间无平方因子数计数
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - math
+n_min: 1
+n_max: 1000000
+elem_min: 1
+elem_max: 1000000

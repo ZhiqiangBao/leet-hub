@@ -1,0 +1,9 @@
+class_name: Solution
+method: countSquareFree
+params:
+  - name: left
+    type: int
+  - name: right
+    type: int
+return_type: int
+compare: exact

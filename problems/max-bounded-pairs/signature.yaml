@@ -1,0 +1,8 @@
+class_name: Solution
+method: maxPairs
+params:
+  - name: nums
+    type: List[int]
+  - name: hi
+    type: int
+return_type: int
