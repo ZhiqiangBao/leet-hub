@@ -14,14 +14,17 @@ if str(_TOOLS) not in sys.path:
 from constraints import (  # noqa: E402
     args_n_kind,
     case_n,
-    check_case,
+    check_hits,
     hist_hidden,
     load_bounds,
     load_params,
+    public_bounds,
     scale_issues,
     tags_for,
 )
+from examples import parse_statement_examples  # noqa: E402
 from int_bounds import load_sig_types, range_flags  # noqa: E402
+from utf8io import dump  # noqa: E402
 
 LINE_LIMIT = 7_500_000
 
@@ -51,7 +54,8 @@ def write_report(root: Path, slug: str, out: dict) -> None:
             rows.append(f"- {iss}")
     path = desk / f"{slug}.md"
     path.write_text("\n".join(rows) + "\n", encoding="utf-8")
-    out["report"] = str(path).replace("\\", "/")
+    rel = path.relative_to(root).as_posix()
+    out["report"] = rel
 
 
 def load_solve(path: Path):
@@ -81,103 +85,6 @@ def values_equal(got, expected, compare: str) -> bool:
         key = lambda v: json.dumps(v, sort_keys=True, ensure_ascii=False)
         return sorted(got, key=key) == sorted(expected, key=key)
     return got == expected
-
-
-def param_count(root: Path, slug: str) -> int:
-    path = root / "problems" / slug / "signature.yaml"
-    if not path.is_file():
-        return 0
-    n = 0
-    in_params = False
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.startswith("params:"):
-            in_params = True
-            continue
-        if in_params:
-            if line.startswith(" ") or line.startswith("\t"):
-                if line.strip().startswith("- "):
-                    n += 1
-            else:
-                break
-    return n
-
-
-def coerce_expected(text: str):
-    s = text.strip().strip("`").rstrip("。.")
-    if s in ("true", "True"):
-        return True
-    if s in ("false", "False"):
-        return False
-    if s.startswith("["):
-        try:
-            return json.loads(s.replace("'", '"'))
-        except json.JSONDecodeError:
-            return s
-    try:
-        return int(s)
-    except ValueError:
-        pass
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
-        return s[1:-1]
-    return s
-
-
-def parse_args_blob(blob: str, n_params: int):
-    blob = blob.strip().strip("`")
-    strings = re.findall(r'"([^"]*)"', blob)
-    lists: list = []
-    for m in re.finditer(r"\[[^\[\]]*\]", blob):
-        try:
-            lists.append(json.loads(m.group().replace("'", '"')))
-        except json.JSONDecodeError:
-            pass
-    ints = [int(x) for x in re.findall(r"-?\d+", blob)]
-    if n_params <= 0:
-        return None
-    if n_params == 1:
-        payload = blob.split("=", 1)[-1].strip()
-        if payload.startswith("[") and lists:
-            return [lists[0]]
-        if strings:
-            return [strings[0]]
-        if lists:
-            return [lists[0]]
-        if ints:
-            return [ints[0]]
-        return None
-    if strings:
-        rest = n_params - len(strings)
-        if rest < 0:
-            return None
-        if lists and rest:
-            return strings + lists[:rest]
-        if rest and len(ints) >= rest:
-            return strings + ints[-rest:]
-        if rest == 0:
-            return strings
-        return None
-    if lists:
-        rest = n_params - len(lists)
-        if rest == 0:
-            return lists
-        if rest > 0 and len(ints) >= rest:
-            return lists + ints[-rest:]
-        return None
-    if len(ints) >= n_params:
-        return ints[:n_params]
-    return None
-
-
-def parse_statement_examples(text: str, n_params: int) -> list[tuple[list, object]]:
-    rows: list[tuple[list, object]] = []
-    matches = re.findall(r"输入[:：]\s*(.*?)\s*输出[:：]\s*([^\n]+)", text, flags=re.S)
-    for raw_in, raw_out in matches:
-        raw_in = re.sub(r"\s+", " ", raw_in).strip()
-        args = parse_args_blob(raw_in, n_params)
-        if args is None:
-            continue
-        rows.append((args, coerce_expected(raw_out)))
-    return rows
 
 
 def run_solve(solve, args):
@@ -231,31 +138,44 @@ def main() -> int:
         "example_mismatch": 0,
         "statement_title": True,
         "verdict": verdict,
+        "bounds": public_bounds(bounds),
+        "bound_hits": [],
+        "expected_call_error": 0,
+        "solver_call_error": 0,
     }
 
     if not tests_path.is_file():
         out["ok"] = False
         out["issues"].append("missing tests.jsonl")
-        out["tags"].append("[条数]")
+        out["tags"].append("count")
         write_report(root, args.slug, out)
-        json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
-        print()
+        dump(out)
         return 1
 
     hns: list[int] = []
     kinds: list[str] = []
     public_rows: list[tuple[list, object]] = []
-    bound_codes: list[str] = []
+    hit_acc: dict[tuple, dict] = {}
     author = load_solve(ref_path) if ref_path.is_file() else None
     solver = load_solve(solver_path) if solver_path.is_file() else None
     compare = load_compare(root, args.slug)
     param_types, return_type = load_sig_types(root, args.slug)
     if author is None:
         out["ok"] = False
-        out["issues"].append("[dump] missing ref.py solve()")
+        out["issues"].append("dump: missing ref.py solve()")
     if solver is None and not ignore_solver:
         out["ok"] = False
         out["issues"].append("missing solve2.py; re-dispatch solver")
+
+    def _keep_hit(h: dict) -> None:
+        key = (h["code"], h["param"])
+        prev = hit_acc.get(key)
+        if prev is None:
+            hit_acc[key] = h
+            return
+        if isinstance(h.get("got"), int) and isinstance(prev.get("got"), int):
+            if abs(h["got"]) > abs(prev["got"]):
+                hit_acc[key] = h
 
     for i, raw in enumerate(tests_path.read_text(encoding="utf-8").splitlines()):
         if not raw.strip():
@@ -278,7 +198,8 @@ def main() -> int:
         else:
             out["public"] += 1
             public_rows.append((obj.get("args"), obj.get("expected")))
-        bound_codes.extend(check_case(case_args, params, bounds))
+        for h in check_hits(case_args, params, bounds):
+            _keep_hit(h)
         bad32, bad64 = range_flags(
             obj.get("args"), obj.get("expected"), param_types, return_type
         )
@@ -290,28 +211,55 @@ def main() -> int:
             out["issues"].append(f"line {i} int64")
         expected = obj.get("expected")
         st, got = run_solve(author, case_args)
-        if author is not None and (st != "ok" or not values_equal(got, expected, compare)):
+        if author is not None and st != "ok":
+            out["expected_mismatch"] += 1
+            out["expected_call_error"] += 1
+            if len(out["mismatch_lines"]) < 8:
+                out["mismatch_lines"].append(i)
+                out["issues"].append(f"line {i} dump: solve not called")
+        elif author is not None and not values_equal(got, expected, compare):
             out["expected_mismatch"] += 1
             if len(out["mismatch_lines"]) < 8:
                 out["mismatch_lines"].append(i)
-                out["issues"].append(f"line {i} [dump] ref≠expected")
+                out["issues"].append(f"line {i} dump: ref≠expected")
         if ignore_solver:
             continue
         st2, got2 = run_solve(solver, case_args)
-        if solver is not None and (st2 != "ok" or not values_equal(got2, expected, compare)):
+        if solver is not None and st2 != "ok":
+            out["solver_mismatch"] += 1
+            out["solver_call_error"] += 1
+            if len(out["mismatch_lines"]) < 8:
+                out["mismatch_lines"].append(i)
+            if out["solver_call_error"] <= 5:
+                out["issues"].append(f"line {i} answer: solve not called")
+        elif solver is not None and not values_equal(got2, expected, compare):
             out["solver_mismatch"] += 1
             if len(out["mismatch_lines"]) < 8:
                 out["mismatch_lines"].append(i)
             if out["solver_mismatch"] <= 5:
-                out["issues"].append(f"line {i} [答案] solver≠expected")
+                out["issues"].append(f"line {i} answer: solver≠expected")
 
     out["n_min"] = min(hns) if hns else None
     out["n_max"] = max(hns) if hns else None
     out["hidden_n"] = hist_hidden(hns)
     out["n_kind"] = "length" if any(k == "length" for k in kinds) else "scalar"
+    out["bound_hits"] = list(hit_acc.values())
+    bound_codes = list(dict.fromkeys(h["code"] for h in out["bound_hits"]))
     issue_codes = list(dict.fromkeys(bound_codes + scale_issues(hns, out["n_kind"], bounds)))
     for code in issue_codes:
-        out["issues"].append(code)
+        if code == "out_of_bounds":
+            for h in out["bound_hits"]:
+                if h["code"] == "out_of_bounds":
+                    out["issues"].append(
+                        f"out_of_bounds param={h['param']} got={h['got']} min={h['min']} max={h['max']}"
+                    )
+        else:
+            out["issues"].append(code)
+    for warn in bounds.get("warnings") or []:
+        out["ok"] = False
+        out["issues"].append(warn)
+    if bounds.get("notes"):
+        out["bounds_notes"] = list(bounds["notes"])
     stmt_path = root / "problems" / args.slug / "statement.md"
     if stmt_path.is_file():
         stmt = stmt_path.read_text(encoding="utf-8")
@@ -319,22 +267,26 @@ def main() -> int:
         if not first.startswith("# "):
             out["statement_title"] = False
             out["ok"] = False
-            out["issues"].append("[清单] statement first line not # title")
+            out["issues"].append("checklist: statement first line not # title")
         if "def solve" in stmt:
             out["ok"] = False
-            out["issues"].append("[清单] statement contains def solve")
-        parsed = parse_statement_examples(stmt, param_count(root, args.slug))
+            out["issues"].append("checklist: statement contains def solve")
+        parsed, bind_issues, _n = parse_statement_examples(stmt, params)
+        out["issues"].extend(bind_issues)
+        if bind_issues:
+            out["ok"] = False
+            out["example_mismatch"] += 1
         if parsed:
             ncmp = min(len(parsed), len(public_rows))
             if len(parsed) != len(public_rows):
                 out["example_mismatch"] += 1
-                out["issues"].append("[示例] public count ≠ statement examples")
+                out["issues"].append("examples: public count ≠ statement examples")
             for i in range(ncmp):
                 a_args, a_exp = parsed[i]
                 p_args, p_exp = public_rows[i]
                 if a_args != p_args or not values_equal(p_exp, a_exp, compare):
                     out["example_mismatch"] += 1
-                    out["issues"].append(f"[示例] public[{i}] ≠ statement example")
+                    out["issues"].append(f"examples: public[{i}] ≠ statement example")
     if out["example_mismatch"]:
         out["ok"] = False
     if not (2 <= out["public"] <= 3):
@@ -355,25 +307,42 @@ def main() -> int:
         out["ok"] = False
 
     tags: list[str] = []
-    for iss in out["issues"]:
-        if iss.startswith("["):
-            tag = iss.split("]", 1)[0] + "]"
-            if tag not in tags:
-                tags.append(tag)
-    for tag in tags_for(issue_codes):
-        if tag not in tags:
+
+    def add_tag(tag: str) -> None:
+        if tag and tag not in tags:
             tags.append(tag)
+
+    for iss in out["issues"]:
+        head = iss.split(":", 1)[0].strip() if ":" in iss else ""
+        mapped = {
+            "checklist": "checklist",
+            "examples": "examples",
+            "answer": "answer",
+            "dump": "dump",
+            "starter": "starter",
+            "signature": "signature",
+            "C": "C",
+            "statement": "statement",
+            "out_of_bounds": "constraints",
+        }.get(head)
+        if mapped:
+            add_tag(mapped)
+    for tag in tags_for(issue_codes):
+        add_tag(tag)
+    if bounds.get("warnings"):
+        add_tag("constraints")
     if out["int32_bad"] or out["int64_bad"]:
-        if "[C]" not in tags:
-            tags.append("[C]")
+        add_tag("C")
     if not (2 <= out["public"] <= 3) or out["hidden"] < 20:
-        if "[条数]" not in tags:
-            tags.append("[条数]")
+        add_tag("count")
+    if out["solver_mismatch"]:
+        add_tag("answer")
+    if out["expected_mismatch"]:
+        add_tag("dump")
     out["tags"] = tags
     out["issues"] = out["issues"][:12]
     write_report(root, args.slug, out)
-    json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
-    print()
+    dump(out)
     return 0 if out["ok"] else 1
 
 

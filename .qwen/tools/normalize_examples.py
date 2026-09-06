@@ -2,10 +2,17 @@
 from __future__ import annotations
 
 import argparse
-import json
-import re
-import sys
 from pathlib import Path
+
+_TOOLS = Path(__file__).resolve().parent
+import sys
+
+if str(_TOOLS) not in sys.path:
+    sys.path.insert(0, str(_TOOLS))
+from constraints import load_params  # noqa: E402
+from examples import rewrite_inputs_positional  # noqa: E402
+from utf8io import dump  # noqa: E402
+import re
 
 
 def _unwrap_example_fences(text: str) -> str:
@@ -41,8 +48,24 @@ def _normalize_triple_lines(text: str) -> str:
     return text
 
 
-def normalize(text: str) -> str:
-    return _normalize_triple_lines(_unwrap_example_fences(text))
+def normalize(text: str, params: list[tuple[str, str]] | None = None) -> str:
+    body = _normalize_triple_lines(_unwrap_example_fences(text))
+    if params:
+        body, _ = rewrite_inputs_positional(body, params)
+    return body
+
+
+def normalize_with_edits(
+    text: str, params: list[tuple[str, str]] | None = None
+) -> tuple[str, list[dict]]:
+    body = _normalize_triple_lines(_unwrap_example_fences(text))
+    edits: list[dict] = []
+    if body != text:
+        edits.append({"i": 0, "field": "layout", "kind": "fence_or_colon"})
+    if params:
+        body, more = rewrite_inputs_positional(body, params)
+        edits.extend(more)
+    return body, edits
 
 
 def main() -> int:
@@ -52,21 +75,21 @@ def main() -> int:
     args = parser.parse_args()
     root = Path(args.root).resolve()
     path = root / "problems" / args.slug / "statement.md"
-    out: dict = {"ok": False, "slug": args.slug, "changed": False, "path": None}
+    out: dict = {"ok": False, "slug": args.slug, "changed": False, "path": None, "edits": []}
     if not path.is_file():
         out["issues"] = ["missing statement.md"]
-        json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
-        print()
+        dump(out)
         return 1
     raw = path.read_text(encoding="utf-8")
-    new = normalize(raw)
+    params = load_params(root, args.slug)
+    new, edits = normalize_with_edits(raw, params)
     out["path"] = str(path).replace("\\", "/")
     out["changed"] = new != raw
+    out["edits"] = edits
     if out["changed"]:
         path.write_text(new, encoding="utf-8", newline="\n")
     out["ok"] = True
-    json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
-    print()
+    dump(out)
     return 0
 
 

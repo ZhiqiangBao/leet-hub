@@ -345,8 +345,10 @@ def main() -> int:
     unknown = [x for x in langs if x not in EMITTERS]
     if unknown:
         raise SystemExit(f"unknown langs: {unknown}")
+    from utf8io import dump
+
     summary = write_starters(root, args.slug, langs)
-    print(json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
+    dump(summary)
     return 0 if summary["ok"] else 1
 
 

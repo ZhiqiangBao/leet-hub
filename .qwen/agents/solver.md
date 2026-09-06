@@ -41,10 +41,10 @@ disallowedTools:
 
 写完后必须再 `read_file` 该文件，确认存在且含 `def solve`。然后调 `mcp__leet__statement_check`，`ref` 为 `solve2`。
 
-只看 `ok`、`ref_example_mismatch`。不要贴 JSON 全文、不要列出示例。`ref_example_mismatch>0` 或缺 `solve`：只准再 `write_file` 一次并再调工具。不要改题面、不要读 `_ref.py`。第二次仍不对：立刻停，回「不通过」，交给主编按「两轮仍无解」兜底，不要再写。
+只看 `ok`、`ref_example_mismatch`、`import_error`、`call_error`、`value_mismatch`。不要贴 JSON 全文、不要列出示例。`import_error>0` 或缺 `solve`：文件没导入到 `def solve`。`call_error>0`：未成功调用 `solve`（绑定/异常），不是答案算错。`value_mismatch>0` 才是返回值不符。任一 >0：只准再 `write_file` 一次并再调工具。不要改题面、不要读 `_ref.py`。第二次仍不对：立刻停，回「不通过」，交给主编按「两轮仍无解」兜底，不要再写。
 
 禁止只在回话里贴代码充数；没有执行能力只准答「未执行」。
 
 ## 回给主编
 
-路径、`ok`、`ref_example_mismatch`。不要贴 `solve` 全文、不要列出示例数组。
+路径、`ok`、`ref_example_mismatch`、`import_error`、`call_error`、`value_mismatch`。不要贴 `solve` 全文、不要列出示例数组。

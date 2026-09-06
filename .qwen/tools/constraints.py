@@ -13,12 +13,12 @@ DEFAULTS = {
 }
 
 ISSUE_TAGS = {
-    "lt100": "[规模]",
-    "missing_at_max": "[规模]",
-    "n_max_ne_U": "[规模]",
-    "out_of_bounds": "[约束]",
-    "n_below_min": "[约束]",
-    "n_above_max": "[约束]",
+    "lt100": "scale",
+    "missing_at_max": "scale",
+    "n_max_ne_U": "scale",
+    "out_of_bounds": "constraints",
+    "n_below_min": "constraints",
+    "n_above_max": "constraints",
 }
 
 _INT = re.compile(
@@ -64,27 +64,70 @@ def load_params(root: Path, slug: str) -> list[tuple[str, str]]:
     return params
 
 
-def _parse_param_bounds_block(lines: list[str], i: int) -> tuple[dict[str, dict[str, int]], int]:
-    """Parse nested param_bounds from line i (the `param_bounds:` line). Return map, next index."""
+def _put_bound(out: dict[str, dict[str, int]], name: str, side: str, value: int) -> None:
+    slot = out.setdefault(name, {})
+    slot[side] = value
+
+
+def _apply_bound_key(out: dict[str, dict[str, int]], key: str, value) -> bool:
+    k = str(key).strip()
+    if isinstance(value, dict):
+        slot: dict[str, int] = dict(out.get(k) or {})
+        if "min" in value:
+            slot["min"] = int(value["min"])
+        if "max" in value:
+            slot["max"] = int(value["max"])
+        if slot:
+            out[k] = slot
+            return True
+        return False
+    n = parse_int(str(value)) if not isinstance(value, int) else int(value)
+    if n is None:
+        return False
+    if k.endswith("_min"):
+        _put_bound(out, k[:-4], "min", n)
+        return True
+    if k.endswith("_max"):
+        _put_bound(out, k[:-4], "max", n)
+        return True
+    return False
+
+
+def _parse_flow_map(rest: str) -> dict[str, dict[str, int]]:
     out: dict[str, dict[str, int]] = {}
+    try:
+        raw = json.loads(rest.replace("'", '"'))
+    except json.JSONDecodeError:
+        raw = None
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            _apply_bound_key(out, k, v)
+        return out
+    for m in re.finditer(r"([A-Za-z_]\w*)\s*:\s*(\{[^}]*\}|-?\d+)", rest):
+        key, val = m.group(1), m.group(2)
+        if val.startswith("{"):
+            inner: dict[str, int] = {}
+            for side, num in re.findall(r"(min|max)\s*:\s*(-?\d+)", val):
+                inner[side] = int(num)
+            _apply_bound_key(out, key, inner)
+        else:
+            _apply_bound_key(out, key, val)
+    return out
+
+
+def _parse_param_bounds_block(
+    lines: list[str], i: int
+) -> tuple[dict[str, dict[str, int]], int, list[str]]:
+    """Parse param_bounds from line i. Nested, flow, or flat name_min/name_max."""
+    out: dict[str, dict[str, int]] = {}
+    warnings: list[str] = []
     first = lines[i].strip()
     rest = first.split(":", 1)[1].strip()
     if rest.startswith("{"):
-        try:
-            raw = json.loads(rest.replace("'", '"'))
-        except json.JSONDecodeError:
-            return out, i + 1
-        if isinstance(raw, dict):
-            for k, v in raw.items():
-                if isinstance(v, dict):
-                    slot: dict[str, int] = {}
-                    if "min" in v:
-                        slot["min"] = int(v["min"])
-                    if "max" in v:
-                        slot["max"] = int(v["max"])
-                    if slot:
-                        out[str(k)] = slot
-        return out, i + 1
+        parsed = _parse_flow_map(rest)
+        if not parsed:
+            warnings.append("param_bounds flow map not recognized")
+        return parsed, i + 1, warnings
     i += 1
     cur = ""
     while i < len(lines):
@@ -97,24 +140,30 @@ def _parse_param_bounds_block(lines: list[str], i: int) -> tuple[dict[str, dict[
             continue
         if s.endswith(":") and not s.startswith(("min:", "max:")):
             cur = s[:-1].strip()
-            out.setdefault(cur, {})
+            if cur.endswith("_min") or cur.endswith("_max"):
+                pass
+            else:
+                out.setdefault(cur, {})
             i += 1
             continue
-        if cur and s.startswith("min:"):
-            v = parse_int(s.split(":", 1)[1])
-            if v is not None:
-                out[cur]["min"] = v
-        elif cur and s.startswith("max:"):
-            v = parse_int(s.split(":", 1)[1])
-            if v is not None:
-                out[cur]["max"] = v
+        if ":" in s:
+            key, val = s.split(":", 1)
+            key, val = key.strip(), val.strip()
+            n = parse_int(val)
+            if key in ("min", "max") and cur and n is not None:
+                _put_bound(out, cur, key, n)
+            elif n is not None and _apply_bound_key(out, key, n):
+                cur = ""
+            else:
+                warnings.append(f"param_bounds key {key} not recognized")
         i += 1
-    return out, i
+    return out, i, warnings
 
 
 def load_bounds(root: Path, slug: str) -> dict:
     bounds = dict(DEFAULTS)
     bounds["param_bounds"] = {}
+    bounds["warnings"] = []
     path = root / "problems" / slug / "meta.yaml"
     if not path.is_file():
         return bounds
@@ -139,10 +188,25 @@ def load_bounds(root: Path, slug: str) -> dict:
             if v is not None:
                 bounds["elem_max"] = v
         elif s.startswith("param_bounds:"):
-            pb, i = _parse_param_bounds_block(lines, i)
+            pb, i, warns = _parse_param_bounds_block(lines, i)
             bounds["param_bounds"] = pb
+            bounds["warnings"].extend(warns)
             continue
         i += 1
+    params = load_params(root, slug)
+    names = {n for n, _ in params}
+    notes: list[str] = []
+    cleaned: dict[str, dict[str, int]] = {}
+    for key, slot in (bounds["param_bounds"] or {}).items():
+        if key in names:
+            cleaned[key] = slot
+        else:
+            bounds["warnings"].append(f"param_bounds key {key} not recognized")
+    bounds["param_bounds"] = cleaned
+    for name, typ in params:
+        if typ in ("int", "long") and name not in cleaned:
+            notes.append(f"{name} using elem_min/elem_max")
+    bounds["notes"] = notes
     return bounds
 
 
@@ -157,6 +221,8 @@ def overlay_bounds(
 ) -> dict:
     out = dict(bounds)
     out["param_bounds"] = dict(bounds.get("param_bounds") or {})
+    out["warnings"] = list(bounds.get("warnings") or [])
+    out["notes"] = list(bounds.get("notes") or [])
     if n_min is not None:
         out["n_min"] = int(n_min)
     if n_max is not None:
@@ -167,13 +233,7 @@ def overlay_bounds(
         out["elem_max"] = int(elem_max)
     if param_bounds:
         for k, v in param_bounds.items():
-            slot = dict(out["param_bounds"].get(k) or {})
-            if isinstance(v, dict):
-                if "min" in v:
-                    slot["min"] = int(v["min"])
-                if "max" in v:
-                    slot["max"] = int(v["max"])
-            out["param_bounds"][k] = slot
+            _apply_bound_key(out["param_bounds"], k, v)
     return out
 
 
@@ -211,17 +271,17 @@ def args_n_kind(args) -> str:
     return "scalar"
 
 
-def check_case(args, params: list[tuple[str, str]], bounds: dict) -> list[str]:
-    """Return issue codes for one args list. Does not inspect expected."""
-    found: list[str] = []
+def check_hits(args, params: list[tuple[str, str]], bounds: dict) -> list[dict]:
+    """Per-case bound hits. Scalars only in `got`; never the full args."""
+    hits: list[dict] = []
     n = case_n(args)
     n_min, n_max = int(bounds["n_min"]), int(bounds["n_max"])
     if n < n_min:
-        found.append("n_below_min")
+        hits.append({"code": "n_below_min", "param": "n", "got": n, "min": n_min, "max": n_max})
     if n > n_max:
-        found.append("n_above_max")
+        hits.append({"code": "n_above_max", "param": "n", "got": n, "min": n_min, "max": n_max})
     if not isinstance(args, (list, tuple)):
-        return found
+        return hits
     for i, (name, typ) in enumerate(params):
         if i >= len(args):
             break
@@ -231,18 +291,40 @@ def check_case(args, params: list[tuple[str, str]], bounds: dict) -> list[str]:
             lo, hi = _leaf_range(bounds, name)
             for x in val:
                 if isinstance(x, int) and not isinstance(x, bool) and (x < lo or x > hi):
-                    found.append("out_of_bounds")
+                    hits.append(
+                        {"code": "out_of_bounds", "param": name, "got": x, "min": lo, "max": hi}
+                    )
                     break
         elif typ in ("int", "long") and isinstance(val, int) and not isinstance(val, bool):
             lo, hi = _leaf_range(bounds, name)
             if val < lo or val > hi:
-                found.append("out_of_bounds")
+                hits.append(
+                    {"code": "out_of_bounds", "param": name, "got": val, "min": lo, "max": hi}
+                )
         elif typ == "str" and isinstance(val, str) and "\0" in val:
-            found.append("out_of_bounds")
+            hits.append({"code": "out_of_bounds", "param": name, "got": "nul", "min": 0, "max": 0})
         elif inner == "str" and isinstance(val, list):
             if any(isinstance(x, str) and "\0" in x for x in val):
-                found.append("out_of_bounds")
-    return list(dict.fromkeys(found))
+                hits.append(
+                    {"code": "out_of_bounds", "param": name, "got": "nul", "min": 0, "max": 0}
+                )
+    return hits
+
+
+def check_case(args, params: list[tuple[str, str]], bounds: dict) -> list[str]:
+    return list(dict.fromkeys(h["code"] for h in check_hits(args, params, bounds)))
+
+
+def public_bounds(bounds: dict) -> dict:
+    return {
+        "n_min": bounds["n_min"],
+        "n_max": bounds["n_max"],
+        "elem_min": bounds["elem_min"],
+        "elem_max": bounds["elem_max"],
+        "param_bounds": bounds.get("param_bounds") or {},
+        "notes": list(bounds.get("notes") or []),
+        "warnings": list(bounds.get("warnings") or []),
+    }
 
 
 def hist_hidden(hns: list[int]) -> dict:

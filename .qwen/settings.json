@@ -14,14 +14,17 @@
 	},
 	"mcpServers": {
 		"leet": {
-			"command": "python",
-			"args": [".qwen/mcp/server.py"],
-			"cwd": ".",
+			"command": "D:\\python\\python.exe",
+			"args": ["-u", ".qwen/mcp/server.py"],
 			"env": {
-				"PYTHONUNBUFFERED": "1"
+				"PYTHONUNBUFFERED": "1",
+				"PYTHONUTF8": "1",
+				"PYTHONIOENCODING": "utf-8"
 			},
 			"timeout": 600000,
+			"discoveryTimeoutMs": 20000,
 			"trust": true,
+			"alwaysLoadTools": true,
 			"includeTools": [
 				"fix_format",
 				"statement_check",
@@ -37,6 +40,18 @@
 	"mcp": {
 		"allowed": ["leet"],
 		"excluded": ["godot-ai", "blender"]
+	},
+	"tools": {
+		"visible": [
+			"mcp__leet__fix_format",
+			"mcp__leet__statement_check",
+			"mcp__leet__clone_check",
+			"mcp__leet__check_tests",
+			"mcp__leet__run_gen",
+			"mcp__leet__fill_expected",
+			"mcp__leet__write_catalog",
+			"mcp__leet__drop_problem"
+		]
 	},
 	"permissions": {
 		"deny": ["skill"]

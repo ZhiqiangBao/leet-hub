@@ -91,6 +91,14 @@
 
 退回不 commit：不要生成题表。换题由主编调 `mcp__leet__drop_problem` 删该 slug，不要把废稿 `git add`。
 
+## 8. 远景：手写轻量 `leet` MCP（有人点名再拆任务）
+
+现状：`.qwen/mcp/server.py` 用官方 Python MCP SDK（`MCPServer` + stdio），工具仍是 `.qwen/tools/` 子进程。Qwen 客户端是 **一行一条 JSON-RPC**，不是 Content-Length。空闲大约 70MB（SDK / pydantic / starlette）。
+
+可以丢掉 SDK，标准库手写同一套 NDJSON：`initialize`、`notifications/initialized`、`ping`、`tools/list`、`tools/call`；stdout 只走协议，日志只进 stderr；8 个工具名与 `_run()` 不变。空闲可掉到十来 MB。代价是协议升级要自己跟。
+
+未点名不换实现。不要再写 Content-Length 帧。
+
 ## 不做或后置
 
 - 用静态分析给代码打 `O(n)` 标签再排名。

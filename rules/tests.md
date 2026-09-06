@@ -23,12 +23,12 @@
 - 重复值（题意涉及时）
 - 解在开头、中间、结尾
 - 常见错解：只看相邻、漏负数、错误双指针
-- 1～2 条顶满 **meta.yaml 的 `n_max`**（不必是 `10^5`）。长度上限 ≥ 5000 时，其余隐藏大致：3～4 条最小/临界 `n`（可 `<100`）；剩下的 `n` 为 `100`～`5000`。`dump` / `mcp__leet__check_tests` 把 `lt100`/`missing_at_max`/`n_max_ne_U`/`out_of_bounds` 算进 `ok`，不要让模型看直方图。
+- 1～2 条顶满 **meta.yaml 的 `n_max`**（不必是 `10^5`）。长度上限 ≥ 5000 时，其余隐藏大致：3～4 条最小/临界 `n`（可 `<100`）；剩下的 `n` 为 `100`～`5000`。`dump` / `mcp__leet__check_tests` 把 `lt100`/`missing_at_max`/`n_max_ne_U`/`out_of_bounds` 算进 `ok`，不要让模型看直方图。`out_of_bounds` 会带参数名与 got/min/max。`dump` 的 `overlay` 为 true 时，测例是按 dump kwargs 而不是盘上 `meta.yaml` 生成的，校对仍只认 meta。
 - 题面 `n` 上限本身为十几：全部测例的 `n` ≤ 该上限，其中 1～2 条取上限
 - 单个整数参数为 `10^9`：测该值，不生成长度为 `10^9` 的数组
 - 布尔真与假；允许空结果则含空结果
 
-`examples_parsed == examples_n` 只说明捕到了示例块，**不**代表期望值已读到或已与 ref 比对。`ref_example_mismatch` 才是比对结果；三例全中且无 traceback 时先查示例区排版（R2），不要先动 ref。
+`examples_parsed == examples_n` 只说明捕到了示例块，**不**代表已按 `signature.yaml` 绑定成功。`issues` 含 `cannot bind` 就是绑不上（即使 skip_ref 看起来 parsed 齐全）。带 ref 时看 `import_error` / `call_error` / `value_mismatch`，不要只看 `ref_example_mismatch`。三例全中且无 traceback 时先查示例区排版（R2），不要先动 ref。
 
 ## 原则
 

@@ -9,6 +9,11 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+_TOOLS = Path(__file__).resolve().parent
+if str(_TOOLS) not in sys.path:
+    sys.path.insert(0, str(_TOOLS))
+from utf8io import dump  # noqa: E402
+
 TOKEN = re.compile(r"[a-z0-9]+|[\u4e00-\u9fff]")
 
 
@@ -106,8 +111,7 @@ def main() -> int:
     if not index_path.is_file():
         out["ok"] = False
         out["issues"].append("[原创] 未核 missing index/clones.jsonl")
-        json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
-        print()
+        dump(out)
         return 1
     rows = load_index(index_path)
     q = tokenize(query_from(root, args.slug))
@@ -138,8 +142,7 @@ def main() -> int:
         )
     out["n"] = len(hits)
     out["hits"] = hits
-    json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
-    print()
+    dump(out)
     return 0
 
 

@@ -45,17 +45,17 @@
 
 ## MCP 工具（leet）
 
-主编是主会话，发现完成后能直接调这些工具。子代理 `tools:` 必须写规范名，短名进不了允许列表。
+主编是主会话，发现完成后能直接调这些工具。子代理 `tools:` 必须写规范名 `mcp__leet__check_tests`（短名 `check_tests` 进不了允许列表）。`leet` 已设 `alwaysLoadTools`，不要先 `tool_search` 再调。
 
 `settings.json` 的 `includeTools` 用服务器原名（`check_tests`）。模型侧与子代理名单用 `mcp__leet__check_tests`。进项目后 `/mcp` 确认 `leet` 已 Connected；改过配置要重启 Qwen。
 
 | 工具 | 谁用 | 作用 |
 |---|---|---|
-| `mcp__leet__fix_format` | `author`、`quality` | 示例三行、缺省 bounds、空 starter |
-| `mcp__leet__statement_check` | `quality`（`skip_ref=true`）；`oracle`（默认 `_ref.py`）；`solver`（`ref=solve2`）；主编仅兜底时 `skip_ref=true` | 题面示例机检 |
+| `mcp__leet__fix_format` | `author`、`quality` | 键值示例改成位置参数；`edits` / `bounds_notes` |
+| `mcp__leet__statement_check` | `quality`（`skip_ref=true`）；`oracle`（默认 `_ref.py`）；`solver`（`ref=solve2`）；主编仅兜底时 `skip_ref=true` | 按签名绑定示例；`import_error` / `call_error` / `value_mismatch` |
 | `mcp__leet__clone_check` | `quality` | 原创检索 hits |
-| `mcp__leet__run_gen` | `tests` | 跑 `tmp/<slug>_gen.py`，只回 dump 摘要 |
-| `mcp__leet__check_tests` | **主编** | 隐藏测例校对 |
+| `mcp__leet__run_gen` | `tests` | dump 摘要：`issues` / `bounds` / `overlay` / `bound_hits` |
+| `mcp__leet__check_tests` | **主编** | `tags` 为 ASCII（`constraints` `scale` `answer` …） |
 | `mcp__leet__fill_expected` | `arbiter`（仅结论为 solver） | 按 solve2 重填 expected 并 promote |
 | `mcp__leet__write_catalog` | **主编**（commit 前） | 生成 `problems/catalog.md` |
 | `mcp__leet__drop_problem` | **主编**（换题） | 删 `problems/<slug>/` 与 `.qwen/tmp/<slug>_*.py` |
@@ -80,13 +80,13 @@
 
 ## 派工
 
-任务里写：**项目根绝对路径**、`slug`、难度、标签、一句话题意、**答案上界（数字）**。指定 `subagent_type`。不要 fork、不要 inherit。默认按 int32 出题；仅当上界会超 \(2^{31}-1\) 且要保留该规模时，派工写明对应字段 yaml `long`（不要每题都 long，不要写 `int64` / 「请用能容纳的整型」）。给 `author` 加：写完调 `mcp__leet__fix_format`（不要手调示例排版、不要手写 starter）；`meta.yaml` 写清 `n_min`/`n_max`/`elem_min`/`elem_max`（与约束一致；long 字段用 `param_bounds` 或把 `elem_max` 提到 int64）；回执必须带每条示例的逐项/逐窗口手算（不要贴完整数组）。`read_file` 不吃相对路径；所有子代理用派工里的绝对路径拼接，禁止猜盘符或旧项目路径。
+任务里写：**项目根绝对路径**、`slug`、难度、标签、一句话题意、**答案上界（数字）**。指定 `subagent_type`。不要 fork、不要 inherit。默认按 int32 出题；仅当上界会超 \(2^{31}-1\) 且要保留该规模时，派工写明对应字段 yaml `long`（不要每题都 long，不要写 `int64` / 「请用能容纳的整型」）。答案上界只给 author 定 `int`/`long`，不要把「通道」抄进题面；题面约束仍须写 `n` 与值域。给 `author` 加：写完调 `mcp__leet__fix_format`（不要手调示例排版、不要手写 starter）；`meta.yaml` 写清 `n_min`/`n_max`/`elem_min`/`elem_max`（与约束一致；long 字段用嵌套 `param_bounds: {hi: {min, max}}` 或扁平 `hi_min`/`hi_max`，或把 `elem_max` 提到 int64）；示例输入用位置参数；解释只写哪些计入/不计入，不要写解法；回执必须带每条示例的逐项/逐窗口手算（不要贴完整数组）。`read_file` 不吃相对路径；所有子代理用派工里的绝对路径拼接，禁止猜盘符或旧项目路径。
 
 `author` 返回后：**直接派 `quality`**。不要主编调 `mcp__leet__statement_check`、不要主编审题面。质量只看 `quality` 的结论。
 
 `quality` 不通过：`[原创]` 或 `[重题]`（已核）→ **换题**。`[原创] 未核` → 重派 `quality` 或交给用户。其它标签 → 返工 `author` 再 `quality`。不要派 `oracle` / `solver` / `tests`，不要 commit。主编禁止 `web_fetch` 补核。未核项交给用户。
 
-`quality` 通过 → 并行派 `oracle` 与 `solver`。不要主编调 `mcp__leet__statement_check`（兜底节除外）。`oracle` / `solver` 各自用 `mcp__leet__statement_check` 对题面示例，回 `ok` 与 `ref_example_mismatch`。
+`quality` 通过 → 并行派 `oracle` 与 `solver`。不要主编调 `mcp__leet__statement_check`（兜底节除外）。`oracle` / `solver` 各自用 `mcp__leet__statement_check` 对题面示例，回 `ok`、`import_error`、`call_error`、`value_mismatch`、`ref_example_mismatch`。`call_error`/`import_error` 是没调到 `solve`，不要当成答案算错。
 
 `oracle` 的 `ref_example_mismatch≠0` 或缺文件 → 先停该 agent，**新派** `oracle`（同一 slug 至多两轮，含首派）。不要派 `tests`。两轮都不过 → 走「oracle / solver 两轮仍无解」，不要第三轮。过了再 `Test-Path` 确认 `_ref.py` 存在，派 `tests`。`solver` 示例对不上 → 同样新派 `solver`（至多两轮）；两轮都不过 → 走同一兜底。`tests` 与 `solver` 都回来且 solver 示例过了：`Test-Path` 确认 `_ref.py` 与 `_solve2.py` 存在，**主编调 `mcp__leet__check_tests`**。
 
@@ -94,23 +94,23 @@
 
 返工 `author` 回来后直接再派 `quality`，不要主编先跑脚本当质检。
 
-派 `tests` 必须写进任务：只造 `args`；不读 `_ref.py`；写完 `gen.py` 调 `mcp__leet__run_gen`（内部 `dump()` 用 `_ref.py` 的 `solve` 填 `expected`）；规模与越界看摘要里的 `issues`；禁止读/打印 jsonl。
+派 `tests` 必须写进任务：只造 `args`；不读 `_ref.py`；写完 `gen.py` 调 `mcp__leet__run_gen`（内部 `dump()` 用 `_ref.py` 的 `solve` 填 `expected`）；规模与越界看摘要里的 `issues`、`bounds`、`overlay`、`bound_hits`。`overlay` 为 true 表示 dump 用了 kwargs，校对仍只认 `meta.yaml`。禁止读/打印 jsonl。不要给 `dump` 传 `param_bounds=` overlay 来绕过 meta。
 
 ## 每题
 
 1. `author`：题面、签名、示例、`meta.yaml` 约束四字段；starter 与示例排版由 `mcp__leet__fix_format` 生成/改写。不写 `_ref.py`、不写 jsonl。
-2. `quality`：只做质量（不重题、不抄袭、无矛盾、**手算示例是否符合题意**、签名/约束/starter）。用 `mcp__leet__clone_check` 的 hits 核原创；索引缺失才 `[原创] 未核`。不写测例、不写 oracle、不跑脚本来验示例对错。`[原创]`/`[重题]` 不通过 → 主编换题；其它不通过 → `author` 返工后再 `quality`；未核 → 重派 `quality` 或交给用户。
+2. `quality`：只做质量（不重题、不抄袭、无矛盾、**手算示例是否符合题意**、签名/约束/starter、**文体**：解法进解释、评测黑话、下标/元素混说）。机检过了仍可能 `[题意]`/`[约束]` 不通过。用 `mcp__leet__clone_check` 的 hits 核原创；索引缺失才 `[原创] 未核`。不写测例、不写 oracle、不跑脚本来验示例对错。`[原创]`/`[重题]` 不通过 → 主编换题；其它不通过 → `author` 返工后再 `quality`；未核 → 重派 `quality` 或交给用户。
 3. `oracle`：写 `.qwen/tmp/<slug>_ref.py`（其中 `def solve`），调 `mcp__leet__statement_check` 对题面示例。不对只准再写一次；仍不对停手，由主编新派（至多两轮）。
 4. `solver`：与 `oracle` 并行，只读题面写 `.qwen/tmp/<slug>_solve2.py`，调 `mcp__leet__statement_check` 且 `ref=solve2`。不对只准再写一次；仍不对停手，由主编新派（至多两轮）。不对拍 `_ref.py`、不读 jsonl。
 5. `tests`：`oracle` 示例机检通过后才派。只造 `args`；`mcp__leet__run_gen` → `dump` 用 `_ref.py` 的 `solve` 填 `expected`。
 6. **校对（主编调 `mcp__leet__check_tests`）**：`solve2` 对 jsonl 的 `expected`；脚本写 `desk/校对/<slug>.md`。主编不读该文件，只看 JSON。
-7. 缺 `_ref.py` → 重派 `oracle`。缺 `solve2.py` → 重派 `solver`。`mcp__leet__check_tests` 的 `tags` 含 `[答案]` 且 `solver_mismatch>0`：派 `arbiter`。`expected_mismatch>0`（`[dump]`）派 `tests`，不派 arbiter。同时有 `[答案]` 与其它测例标签时，**先 arbiter**，规模/条数等留到裁决后再调 `mcp__leet__check_tests`。
+7. 缺 `_ref.py` → 重派 `oracle`。缺 `solve2.py` → 重派 `solver`。`mcp__leet__check_tests` 的 `tags` 含 `answer` 且 `solver_mismatch>0`：派 `arbiter`。`expected_mismatch>0`（`dump`）派 `tests`，不派 arbiter。同时有 `answer` 与其它测例标签时，**先 arbiter**，规模/条数等留到裁决后再调 `mcp__leet__check_tests`。
 
 ## 裁决之后
 
 | 裁决 | 接着 |
 |---|---|
-| `solver`（已 `mcp__leet__fill_expected` promote 并重填 expected） | 再调 `mcp__leet__check_tests`（规模/示例/约束；`[答案]` 视为已用新 oracle 文件） |
+| `solver`（已 `mcp__leet__fill_expected` promote 并重填 expected） | 再调 `mcp__leet__check_tests`（规模/示例/约束；`answer` 视为已用新 oracle 文件） |
 | `oracle` | 测例不动；`solve2` 视为错（`mcp__leet__check_tests` 见裁决结论 `author` 时不对拍 solver）；其它项仍过才能 commit |
 | `both-wrong` / `statement-ambiguous` | `author` 返工题面，然后 `quality` → 通过后 `oracle` 与 `solver` 并行，`oracle` 回来后 `tests` → 主编 `mcp__leet__check_tests` |
 
@@ -118,18 +118,18 @@
 
 ## 校对之后（其它标签）
 
-对照 `mcp__leet__check_tests` 的 `tags` 采信后再派。不手改题目或测例，也不要为了核对去打开题面。
+对照 `mcp__leet__check_tests` 的 `tags` 采信后再派。不手改题目或测例，也不要为了核对去打开题面。脚本 `tags` 为 ASCII：`constraints` `scale` `answer` `dump` `examples` `checklist` `count` `starter` `signature` `C`。quality 自报仍用中文 `[原创]` `[重题]`。
 
 | 标签 | 派 | 随后 |
 |---|---|---|
-| `[starter]` | `author` | `quality` → 通过后 `oracle` 与 `solver` 并行，`oracle` 回来后 `tests` → `mcp__leet__check_tests` |
-| `[签名]`、题面示例 / 约束 / 题意 / `[清单]` 题面 | `author` | `quality` → 通过后同上 |
+| `starter` | `author` | `quality` → 通过后 `oracle` 与 `solver` 并行，`oracle` 回来后 `tests` → `mcp__leet__check_tests` |
+| `signature`、题面示例 / 约束 / 题意 / `checklist` 题面 | `author` | `quality` → 通过后同上 |
 | `[原创]` `[重题]` | **换题** | 见「换题」 |
-| `[示例]` | 题面：`author` 后走 `quality`；测例：`tests` → `mcp__leet__check_tests` |
-| `[条数]` `[清单]` `[约束]` `[规模]` `[dump]`（测例） | `tests` | `mcp__leet__check_tests` |
-| `[C]` 测例越 int32（`int` 通道）或越 int64（`long` 通道） | `tests` | `mcp__leet__check_tests` |
-| `[C]` 题面值域/C 签名 | `author` | `quality` → 通过后 `oracle` 与 `solver` 并行，`oracle` 回来后 `tests` → `mcp__leet__check_tests` |
-| `[答案]` `solver_mismatch` | `arbiter` | 见上表 |
+| `examples` | 题面：`author` 后走 `quality`；测例：`tests` → `mcp__leet__check_tests` |
+| `count` `checklist` `constraints` `scale` `dump`（测例） | `tests` | `mcp__leet__check_tests` |
+| `C` 测例越 int32（`int` 通道）或越 int64（`long` 通道） | `tests` | `mcp__leet__check_tests` |
+| `C` 题面值域/C 签名 | `author` | `quality` → 通过后 `oracle` 与 `solver` 并行，`oracle` 回来后 `tests` → `mcp__leet__check_tests` |
+| `answer` `solver_mismatch` | `arbiter` | 见上表 |
 
 同一题：题面或测例返工后再调 `mcp__leet__check_tests`，至多两次。`arbiter` 后立刻再调不算新一轮。仍 `ok` 为 false 则不 commit，将 JSON 交给用户。
 
@@ -140,8 +140,9 @@
 两轮后仍 `ref_example_mismatch≠0` 或缺 `solve`：
 
 1. 主编调 `mcp__leet__statement_check`（`skip_ref=true`；只看 `examples_parsed` / `examples_n` / `issues`）。
-   - 解析不全（`examples_parsed` ≠ `examples_n` 或不在 2..3）→ 派 `author` 修示例三行，再 `quality`。
-   - 解析完整 → 题面或示例无法被两套实现同时对齐：派 `author` 返工题面（收窄保证或改示例），再 `quality`。
+   - `issues` 含 `cannot bind` 或 `examples_parsed` ≠ `examples_n` 或不在 2..3 → 派 `author` 修示例三行（写成位置参数），再 `quality`。
+   - 上一轮实现 JSON 的 `import_error`/`call_error`>0：没调到 `solve`，不是答案算错；bind 修好后再派实现。
+   - 绑定完整且 `value_mismatch`>0 → 题面或示例无法被两套实现同时对齐：派 `author` 返工题面（收窄保证或改示例），再 `quality`。
 2. 此兜底每个 slug **只一次**（一轮 author + quality，然后 oracle / solver 再各最多两轮）。
 3. 仅 solver 失败、oracle 已过：兜底只重派 **solver**（保留 `_ref.py` 与测例）；author 返工后仍先 `quality`。
 4. 兜底后再失败 → **换题**。

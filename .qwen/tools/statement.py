@@ -11,16 +11,34 @@ from pathlib import Path
 _TOOLS = Path(__file__).resolve().parent
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
+from constraints import load_params  # noqa: E402
+from examples import parse_statement_examples  # noqa: E402
 from int_bounds import load_sig_types, range_flags  # noqa: E402
+from utf8io import dump  # noqa: E402
+
+
+def values_equal(got, expected, compare: str) -> bool:
+    if compare == "any_order" and isinstance(got, list) and isinstance(expected, list):
+        if len(got) != len(expected):
+            return False
+        key = lambda v: json.dumps(v, sort_keys=True, ensure_ascii=False)
+        return sorted(got, key=key) == sorted(expected, key=key)
+    return got == expected
 
 
 def load_solve(path: Path):
     spec = importlib.util.spec_from_file_location("leet_ref", path)
     if spec is None or spec.loader is None:
-        return None
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return getattr(mod, "solve", None)
+        return None, "import_error"
+    try:
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None, "import_error"
+    solve = getattr(mod, "solve", None)
+    if solve is None:
+        return None, "import_error"
+    return solve, None
 
 
 def load_compare(root: Path, slug: str) -> str:
@@ -34,114 +52,7 @@ def load_compare(root: Path, slug: str) -> str:
     return "exact"
 
 
-def values_equal(got, expected, compare: str) -> bool:
-    if compare == "any_order" and isinstance(got, list) and isinstance(expected, list):
-        if len(got) != len(expected):
-            return False
-        key = lambda v: json.dumps(v, sort_keys=True, ensure_ascii=False)
-        return sorted(got, key=key) == sorted(expected, key=key)
-    return got == expected
-
-
-def param_count(root: Path, slug: str) -> int:
-    path = root / "problems" / slug / "signature.yaml"
-    if not path.is_file():
-        return 0
-    n = 0
-    in_params = False
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.startswith("params:"):
-            in_params = True
-            continue
-        if in_params:
-            if line.startswith(" ") or line.startswith("\t"):
-                if line.strip().startswith("- "):
-                    n += 1
-            else:
-                break
-    return n
-
-
-def coerce_expected(text: str):
-    s = text.strip().strip("`").rstrip("。.")
-    if s in ("true", "True"):
-        return True
-    if s in ("false", "False"):
-        return False
-    if s.startswith("["):
-        try:
-            return json.loads(s.replace("'", '"'))
-        except json.JSONDecodeError:
-            return s
-    try:
-        return int(s)
-    except ValueError:
-        pass
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
-        return s[1:-1]
-    return s
-
-
-def parse_args_blob(blob: str, n_params: int):
-    blob = blob.strip().strip("`")
-    strings = re.findall(r'"([^"]*)"', blob)
-    lists: list = []
-    for m in re.finditer(r"\[[^\[\]]*\]", blob):
-        try:
-            lists.append(json.loads(m.group().replace("'", '"')))
-        except json.JSONDecodeError:
-            pass
-    ints = [int(x) for x in re.findall(r"-?\d+", blob)]
-    if n_params <= 0:
-        return None
-    if n_params == 1:
-        payload = blob.split("=", 1)[-1].strip()
-        if payload.startswith("[") and lists:
-            return [lists[0]]
-        if strings:
-            return [strings[0]]
-        if lists:
-            return [lists[0]]
-        if ints:
-            return [ints[0]]
-        return None
-    if strings:
-        rest = n_params - len(strings)
-        if rest < 0:
-            return None
-        if lists and rest:
-            return strings + lists[:rest]
-        if rest and len(ints) >= rest:
-            return strings + ints[-rest:]
-        if rest == 0:
-            return strings
-        return None
-    if lists:
-        rest = n_params - len(lists)
-        if rest == 0:
-            return lists
-        if rest > 0 and len(ints) >= rest:
-            return lists + ints[-rest:]
-        return None
-    if len(ints) >= n_params:
-        return ints[:n_params]
-    return None
-
-
-def parse_statement_examples(text: str, n_params: int) -> list[tuple[list, object]]:
-    rows: list[tuple[list, object]] = []
-    matches = re.findall(r"输入[:：]\s*(.*?)\s*输出[:：]\s*([^\n]+)", text, flags=re.S)
-    for raw_in, raw_out in matches:
-        raw_in = re.sub(r"\s+", " ", raw_in).strip()
-        args = parse_args_blob(raw_in, n_params)
-        if args is None:
-            continue
-        rows.append((args, coerce_expected(raw_out)))
-    return rows
-
-
 def strip_starter_comments(body: str, lang: str) -> str:
-    """Drop comments so `return` in notes does not look like a placeholder."""
     if lang == "python3":
         return "\n".join(re.sub(r"#.*", "", line) for line in body.splitlines())
     out = re.sub(r"/\*.*?\*/", " ", body, flags=re.S)
@@ -185,46 +96,45 @@ def check_statement(
         "examples_n": 0,
         "examples_parsed": 0,
         "ref_example_mismatch": 0,
+        "import_error": 0,
+        "call_error": 0,
+        "value_mismatch": 0,
         "ref": str(ref_path).replace("\\", "/") if ref_path.is_file() else None,
         "starter_missing": [],
         "starter_placeholder": [],
     }
     if not stmt_path.is_file():
         out["ok"] = False
-        out["issues"].append("[清单] missing statement.md")
+        out["issues"].append("checklist: missing statement.md")
         return out
     stmt = stmt_path.read_text(encoding="utf-8")
+    params = load_params(root, slug)
     try:
-        spec = importlib.util.spec_from_file_location(
-            "leet_normalize_examples",
-            Path(__file__).resolve().parent / "normalize_examples.py",
-        )
-        if spec is not None and spec.loader is not None:
-            mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mod)
-            fixed = mod.normalize(stmt)
-            if fixed != stmt:
-                stmt_path.write_text(fixed, encoding="utf-8", newline="\n")
-                stmt = fixed
+        from normalize_examples import normalize as _norm
+
+        fixed = _norm(stmt, params)
+        if fixed != stmt:
+            stmt_path.write_text(fixed, encoding="utf-8", newline="\n")
+            stmt = fixed
     except Exception:
         pass
     first = next((ln.strip() for ln in stmt.splitlines() if ln.strip()), "")
     if not first.startswith("# "):
         out["statement_title"] = False
         out["ok"] = False
-        out["issues"].append("[清单] statement first line not # title")
+        out["issues"].append("checklist: statement first line not # title")
     if "def solve" in stmt:
         out["ok"] = False
-        out["issues"].append("[清单] statement contains def solve")
+        out["issues"].append("checklist: statement contains def solve")
     if re.search(r"标准输入|stdin\b", stmt, flags=re.I):
         out["ok"] = False
-        out["issues"].append("[题意] statement asks for stdin")
+        out["issues"].append("statement: statement asks for stdin")
     if not sig_path.is_file():
         out["ok"] = False
-        out["issues"].append("[签名] missing signature.yaml")
+        out["issues"].append("signature: missing signature.yaml")
     if not meta_path.is_file():
         out["ok"] = False
-        out["issues"].append("[清单] missing meta.yaml")
+        out["issues"].append("checklist: missing meta.yaml")
     for lang, path in starters.items():
         if not path.is_file():
             out["starter_missing"].append(lang)
@@ -234,20 +144,23 @@ def check_statement(
             out["starter_placeholder"].append(lang)
     if out["starter_missing"]:
         out["ok"] = False
-        out["issues"].append("[starter] missing " + ",".join(out["starter_missing"]))
+        out["issues"].append("starter: missing " + ",".join(out["starter_missing"]))
     if out["starter_placeholder"]:
         out["ok"] = False
-        out["issues"].append("[starter] placeholder " + ",".join(out["starter_placeholder"]))
-    n_params = param_count(root, slug)
-    parsed = parse_statement_examples(stmt, n_params)
+        out["issues"].append("starter: placeholder " + ",".join(out["starter_placeholder"]))
+    parsed, bind_issues, examples_n = parse_statement_examples(stmt, params)
     out["examples_parsed"] = len(parsed)
-    out["examples_n"] = len(re.findall(r"输入[:：]", stmt))
+    out["examples_n"] = examples_n
+    out["issues"].extend(bind_issues)
+    if bind_issues:
+        out["ok"] = False
     if not (2 <= out["examples_n"] <= 3):
         out["ok"] = False
-        out["issues"].append(f"[示例] statement example count {out['examples_n']} not in 2..3")
+        out["issues"].append(f"examples: statement example count {out['examples_n']} not in 2..3")
     elif parsed and len(parsed) != out["examples_n"]:
         out["ok"] = False
-        out["issues"].append("[示例] could not parse all statement examples")
+        if not bind_issues:
+            out["issues"].append("examples: could not parse all statement examples")
     compare = load_compare(root, slug)
     param_types, return_type = load_sig_types(root, slug)
     saw32 = saw64 = False
@@ -257,23 +170,37 @@ def check_statement(
         saw64 = saw64 or bad64
     if saw32:
         out["ok"] = False
-        out["issues"].append("[C] statement example int32")
+        out["issues"].append("C: statement example int32")
     if saw64:
         out["ok"] = False
-        out["issues"].append("[C] statement example int64")
+        out["issues"].append("C: statement example int64")
     if not skip_ref:
-        solve = load_solve(ref_path) if ref_path.is_file() else None
+        solve, ierr = load_solve(ref_path) if ref_path.is_file() else (None, "import_error")
         if solve is None:
             out["ok"] = False
-            out["issues"].append("[答案] missing solve()")
+            out["import_error"] = max(1, out["examples_n"] or 1)
+            out["ref_example_mismatch"] = out["import_error"]
+            out["issues"].append("answer: missing solve(); import_error")
         else:
             for args, expected in parsed:
                 st, got = run_solve(solve, args)
-                if st != "ok" or not values_equal(got, expected, compare):
-                    out["ref_example_mismatch"] += 1
-        if out["ref_example_mismatch"]:
-            out["ok"] = False
-            out["issues"].append(f"[示例] ref≠statement example x{out['ref_example_mismatch']}")
+                if st != "ok":
+                    out["call_error"] += 1
+                elif not values_equal(got, expected, compare):
+                    out["value_mismatch"] += 1
+            out["ref_example_mismatch"] = (
+                out["import_error"] + out["call_error"] + out["value_mismatch"]
+            )
+            if out["call_error"]:
+                out["ok"] = False
+                out["issues"].append(
+                    f"examples: solve not called x{out['call_error']} (call_error)"
+                )
+            if out["value_mismatch"]:
+                out["ok"] = False
+                out["issues"].append(
+                    f"examples: ref≠statement example x{out['value_mismatch']} (value_mismatch)"
+                )
     out["skip_ref"] = skip_ref
     out["issues"] = out["issues"][:12]
     return out
@@ -296,8 +223,7 @@ def main() -> int:
     args = parser.parse_args()
     ref = Path(args.ref) if args.ref else None
     out = check_statement(Path(args.root), args.slug, skip_ref=args.skip_ref, ref=ref)
-    json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
-    print()
+    dump(out)
     return 0 if out["ok"] else 1
 
 

@@ -1,21 +1,40 @@
-"""Stdio MCP for Qwen Code. Wraps .qwen/tools CLIs. Never dumps tests.jsonl."""
+"""Stdio MCP for Qwen Code. Official SDK. Wraps .qwen/tools. Never dumps tests.jsonl."""
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
 
+from mcp.server import MCPServer
+from mcp_types import ToolAnnotations
+
+os.environ.setdefault("PYTHONUNBUFFERED", "1")
+os.environ.setdefault("PYTHONUTF8", "1")
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    from utf8io import configure as _utf8
+
+    _utf8()
+except Exception:
+    pass
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
+logger = logging.getLogger(__name__)
+
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = ROOT / ".qwen" / "tools"
 PYTHON = sys.executable
-PROTOCOL = "2024-11-05"
 MAX_STDERR = 800
 MAX_RAW = 4000
 
-os.environ.setdefault("PYTHONUNBUFFERED", "1")
-sys.path.insert(0, str(TOOLS))
+mcp = MCPServer("leet")
+
+
+def _json(data: dict) -> str:
+    return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
 
 
 def _last_json(text: str) -> dict:
@@ -43,7 +62,7 @@ def _run(script: str, argv: list[str], timeout: int = 180) -> dict:
         errors="replace",
         cwd=str(ROOT),
         timeout=timeout,
-        env={**os.environ, "PYTHONUNBUFFERED": "1"},
+        env={**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
     )
     out = _last_json(proc.stdout)
     if proc.returncode != 0:
@@ -67,7 +86,7 @@ def _run_gen(slug: str) -> dict:
             errors="replace",
             cwd=str(ROOT),
             timeout=300,
-            env={**os.environ, "PYTHONUNBUFFERED": "1"},
+            env={**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
         )
     except subprocess.TimeoutExpired:
         return {"ok": False, "slug": slug, "error": "timeout"}
@@ -80,230 +99,120 @@ def _run_gen(slug: str) -> dict:
     return out
 
 
-TOOLS_SPEC = [
-    {
-        "name": "fix_format",
-        "description": "Rewrite example lines, fill missing meta bounds, generate empty starters. Author and quality. Does not judge 题意.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"slug": {"type": "string"}},
-            "required": ["slug"],
-        },
-        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
-    },
-    {
-        "name": "statement_check",
-        "description": "Parse statement examples and optionally run solve() on them. Quality: skip_ref=true. Oracle: defaults. Solver: ref=solve2. Returns ok, examples_parsed, examples_n, ref_example_mismatch, issues. Never prints examples.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "slug": {"type": "string"},
-                "skip_ref": {"type": "boolean", "default": False},
-                "ref": {
-                    "type": "string",
-                    "description": "Empty = tmp/<slug>_ref.py. 'solve2' = tmp/<slug>_solve2.py.",
-                    "default": "",
-                },
-            },
-            "required": ["slug"],
-        },
-        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
-    },
-    {
-        "name": "clone_check",
-        "description": "Score the problem against index/clones.jsonl. Returns ok, hits (id, titles, score), issues. Do not treat hits as auto-fail.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"slug": {"type": "string"}},
-            "required": ["slug"],
-        },
-        "annotations": {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
-    },
-    {
-        "name": "check_tests",
-        "description": "Mechanical hidden-test checks. Editor after tests+solver. Returns ok, tags, solver_mismatch, expected_mismatch, issues. Writes desk/校对/<slug>.md. Never prints cases.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"slug": {"type": "string"}},
-            "required": ["slug"],
-        },
-        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
-    },
-    {
-        "name": "run_gen",
-        "description": "Run .qwen/tmp/<slug>_gen.py (must call dump). Returns the dump summary only: ok, public, hidden, hidden_n, issues. Never returns test cases.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"slug": {"type": "string"}},
-            "required": ["slug"],
-        },
-        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False},
-    },
-    {
-        "name": "fill_expected",
-        "description": "Arbiter only when verdict is solver: refill tests.jsonl expected from solve2 and copy it to ref.py. Returns filled, solve_err.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "slug": {"type": "string"},
-                "promote": {"type": "boolean", "default": True},
-            },
-            "required": ["slug"],
-        },
-        "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False},
-    },
-    {
-        "name": "write_catalog",
-        "description": "Regenerate problems/catalog.md from git-tracked problems plus this slug. Editor, commit only.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"slug": {"type": "string"}},
-            "required": ["slug"],
-        },
-        "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
-    },
-    {
-        "name": "drop_problem",
-        "description": "Editor only after voiding a slug. Deletes problems/<slug>/ and .qwen/tmp/<slug>_*.py. Does not touch catalog.md, desk/, or other slugs. Returns ok, removed.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {"slug": {"type": "string"}},
-            "required": ["slug"],
-        },
-        "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": True},
-    },
-]
+def _need_slug(slug: str) -> str | None:
+    if not str(slug or "").strip():
+        return _json({"ok": False, "error": "missing slug"})
+    return None
 
 
-def dispatch(name: str, arguments: dict) -> dict:
-    slug = str(arguments.get("slug") or "").strip()
-    if not slug:
-        return {"ok": False, "error": "missing slug"}
-    if name == "fix_format":
-        return _run("fix_format.py", ["--slug", slug])
-    if name == "statement_check":
-        argv = ["--slug", slug]
-        if arguments.get("skip_ref"):
-            argv.append("--skip-ref")
-        ref = str(arguments.get("ref") or "").strip()
-        if ref == "solve2":
-            argv.extend(["--ref", str(ROOT / ".qwen" / "tmp" / f"{slug}_solve2.py")])
-        elif ref:
-            argv.extend(["--ref", ref])
-        return _run("statement.py", argv)
-    if name == "clone_check":
-        return _run("clone_check.py", ["--slug", slug])
-    if name == "check_tests":
-        return _run("check.py", ["--slug", slug], timeout=180)
-    if name == "run_gen":
-        return _run_gen(slug)
-    if name == "fill_expected":
-        argv = [
-            "--slug",
-            slug,
-            "--ref",
-            str(ROOT / ".qwen" / "tmp" / f"{slug}_solve2.py"),
-        ]
-        if arguments.get("promote", True):
-            argv.append("--promote")
-        return _run("fill_expected.py", argv)
-    if name == "write_catalog":
-        return _run("write_catalog.py", ["--slug", slug])
-    if name == "drop_problem":
-        return _run("drop_problem.py", ["--slug", slug])
-    return {"ok": False, "error": f"unknown tool {name}"}
+@mcp.tool(
+    description="Rewrite example lines (kv to positional), fill missing meta bounds, generate empty starters. Returns ok, examples.changed, examples.edits, bounds_notes, issues. Does not judge 题意.",
+    annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True),
+    structured_output=False,
+)
+def fix_format(slug: str) -> str:
+    miss = _need_slug(slug)
+    if miss:
+        return miss
+    return _json(_run("fix_format.py", ["--slug", slug.strip()]))
 
 
-def _read() -> dict | None:
-    buf = sys.stdin.buffer
-    headers: dict[str, str] = {}
-    while True:
-        line = buf.readline()
-        if not line:
-            return None
-        if line in (b"\r\n", b"\n"):
-            break
-        raw = line.decode("utf-8", errors="replace").strip()
-        if ":" in raw:
-            k, v = raw.split(":", 1)
-            headers[k.strip().lower()] = v.strip()
-    n = int(headers.get("content-length") or "0")
-    body = buf.read(n) if n else b""
-    if not body:
-        return None
-    return json.loads(body.decode("utf-8"))
+@mcp.tool(
+    description="Parse statement examples and bind them to signature.yaml. skip_ref=true: quality. Default ref: oracle. ref=solve2: solver. Returns ok, examples_parsed, examples_n, import_error, call_error, value_mismatch, ref_example_mismatch, issues. Bind failure is an issue even when skip_ref. Never prints examples.",
+    annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True),
+    structured_output=False,
+)
+def statement_check(slug: str, skip_ref: bool = False, ref: str = "") -> str:
+    miss = _need_slug(slug)
+    if miss:
+        return miss
+    slug = slug.strip()
+    argv = ["--slug", slug]
+    if skip_ref:
+        argv.append("--skip-ref")
+    ref = str(ref or "").strip()
+    if ref == "solve2":
+        argv.extend(["--ref", str(ROOT / ".qwen" / "tmp" / f"{slug}_solve2.py")])
+    elif ref:
+        argv.extend(["--ref", ref])
+    return _json(_run("statement.py", argv))
 
 
-def _write(msg: dict) -> None:
-    data = json.dumps(msg, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    sys.stdout.buffer.write(f"Content-Length: {len(data)}\r\n\r\n".encode("ascii") + data)
-    sys.stdout.buffer.flush()
+@mcp.tool(
+    description="Score the problem against index/clones.jsonl. Returns ok, hits (id, titles, score), issues. Do not treat hits as auto-fail.",
+    annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True),
+    structured_output=False,
+)
+def clone_check(slug: str) -> str:
+    miss = _need_slug(slug)
+    if miss:
+        return miss
+    return _json(_run("clone_check.py", ["--slug", slug.strip()]))
 
 
-def _ok(req_id, result: dict) -> None:
-    _write({"jsonrpc": "2.0", "id": req_id, "result": result})
+@mcp.tool(
+    description="Mechanical hidden-test checks. Editor after tests+solver. Returns ok, tags (ASCII: constraints/scale/answer/dump/examples/checklist/count/starter/C), bound_hits, solver_mismatch, expected_mismatch, issues. report is UTF-8 relative path. Never prints cases.",
+    annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True),
+    structured_output=False,
+)
+def check_tests(slug: str) -> str:
+    miss = _need_slug(slug)
+    if miss:
+        return miss
+    return _json(_run("check.py", ["--slug", slug.strip()], timeout=180))
 
 
-def _err(req_id, code: int, message: str) -> None:
-    _write({"jsonrpc": "2.0", "id": req_id, "error": {"code": code, "message": message}})
+@mcp.tool(
+    description="Run .qwen/tmp/<slug>_gen.py (must call dump). Returns dump summary only: ok, public, hidden, hidden_n, issues, bounds, overlay, bound_hits. Never returns test cases.",
+    annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False),
+    structured_output=False,
+)
+def run_gen(slug: str) -> str:
+    miss = _need_slug(slug)
+    if miss:
+        return miss
+    return _json(_run_gen(slug.strip()))
 
 
-def main() -> int:
-    while True:
-        try:
-            msg = _read()
-        except Exception:
-            return 1
-        if msg is None:
-            return 0
-        method = msg.get("method")
-        req_id = msg.get("id")
-        if method == "initialize":
-            _ok(
-                req_id,
-                {
-                    "protocolVersion": PROTOCOL,
-                    "capabilities": {"tools": {"listChanged": False}},
-                    "serverInfo": {"name": "leet", "version": "1.0.0"},
-                },
-            )
-            continue
-        if method == "notifications/initialized" or req_id is None:
-            continue
-        if method == "ping":
-            _ok(req_id, {})
-            continue
-        if method == "tools/list":
-            _ok(req_id, {"tools": TOOLS_SPEC})
-            continue
-        if method == "prompts/list":
-            _ok(req_id, {"prompts": []})
-            continue
-        if method == "resources/list":
-            _ok(req_id, {"resources": []})
-            continue
-        if method == "tools/call":
-            params = msg.get("params") or {}
-            name = params.get("name") or ""
-            args = params.get("arguments") or {}
-            try:
-                result = dispatch(name, args if isinstance(args, dict) else {})
-            except subprocess.TimeoutExpired:
-                result = {"ok": False, "error": "timeout"}
-            except Exception as exc:
-                result = {"ok": False, "error": type(exc).__name__}
-            text = json.dumps(result, ensure_ascii=False, separators=(",", ":"))
-            _ok(
-                req_id,
-                {
-                    "content": [{"type": "text", "text": text}],
-                    "isError": not result.get("ok", False),
-                },
-            )
-            continue
-        _err(req_id, -32601, f"Method not found: {method}")
-    return 0
+@mcp.tool(
+    description="Arbiter only when verdict is solver: refill tests.jsonl expected from solve2 and copy it to ref.py. Returns filled, solve_err.",
+    annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=False),
+    structured_output=False,
+)
+def fill_expected(slug: str, promote: bool = True) -> str:
+    miss = _need_slug(slug)
+    if miss:
+        return miss
+    slug = slug.strip()
+    argv = ["--slug", slug, "--ref", str(ROOT / ".qwen" / "tmp" / f"{slug}_solve2.py")]
+    if promote:
+        argv.append("--promote")
+    return _json(_run("fill_expected.py", argv))
+
+
+@mcp.tool(
+    description="Regenerate problems/catalog.md from git-tracked problems plus this slug. Editor, commit only.",
+    annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True),
+    structured_output=False,
+)
+def write_catalog(slug: str) -> str:
+    miss = _need_slug(slug)
+    if miss:
+        return miss
+    return _json(_run("write_catalog.py", ["--slug", slug.strip()]))
+
+
+@mcp.tool(
+    description="Editor only after voiding a slug. Deletes problems/<slug>/ and .qwen/tmp/<slug>_*.py. Does not touch catalog.md, desk/, or other slugs. Returns ok, removed.",
+    annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=True),
+    structured_output=False,
+)
+def drop_problem(slug: str) -> str:
+    miss = _need_slug(slug)
+    if miss:
+        return miss
+    return _json(_run("drop_problem.py", ["--slug", slug.strip()]))
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    mcp.run(transport="stdio")

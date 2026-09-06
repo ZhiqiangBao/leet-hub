@@ -29,7 +29,7 @@ disallowedTools:
 - gen.py 里 `print(rows)` / `print(args)` / 打印 `expected`，或把测例贴回对话
 - 为「自查」再把 jsonl 读回来
 
-自查 = 看 `mcp__leet__run_gen` 返回的 `public`、`hidden`、`hidden_n`、`issues`、`ok`。`issues` 非空就改 **gen.py** 再调，不要打开 jsonl。
+自查 = 看 `mcp__leet__run_gen` 返回的 `public`、`hidden`、`hidden_n`、`issues`、`ok`、`bounds`、`overlay`、`bound_hits`。`issues` 非空就改 **gen.py** 再调，不要打开 jsonl。`overlay` 为 true 说明 dump kwargs 临时覆盖了 `meta.yaml`，校对不会认这套界——不要用 `param_bounds=` overlay 绕过 meta。
 
 返工：读校对报告与题面，重写 gen.py 再调 `mcp__leet__run_gen`。
 
@@ -86,10 +86,10 @@ dump(SLUG, rows, ROOT)
 | `write_file` 只写 gen.py；`mcp__leet__run_gen` 跑它 | 读 `tests.jsonl` |
 | 自查摘要 `public`/`hidden`/`hidden_n`/`issues` | 打印 `rows`/`args`/`expected` |
 
-约束以 `meta.yaml` 为准。`issues` 有 `lt100`、`missing_at_max`、`n_max_ne_U`、`out_of_bounds` 就改 gen.py。int 通道答案须 int32；仅 yaml `long` 可到 int64。
+约束以 `meta.yaml` 为准。`issues` 有 `lt100`、`missing_at_max`、`n_max_ne_U`、`out_of_bounds param=…` 就改 gen.py。不要给 `dump()` 传 overlay kwargs。int 通道答案须 int32；仅 yaml `long` 可到 int64。
 
 先覆盖：最小/最大规模、值域端点放在 n=100～5000、全相同/已排序/逆序、解在两端与中间、常见错解一条。只做本题 tags。禁止长度为 `10^9` 的数组。
 
 ## 回给主编
 
-转述摘要里的 `public`、`hidden`、`hidden_n`、`issues`、`ok`。给 gen.py 路径。不要贴测例、不要贴 jsonl、不要复述数组。
+转述摘要里的 `public`、`hidden`、`hidden_n`、`issues`、`ok`、`overlay`。给 gen.py 路径。不要贴测例、不要贴 jsonl、不要复述数组。

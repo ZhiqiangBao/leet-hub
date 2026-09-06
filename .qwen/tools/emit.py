@@ -12,11 +12,12 @@ if str(_TOOLS) not in sys.path:
 from constraints import (  # noqa: E402
     args_n_kind,
     case_n,
-    check_case,
+    check_hits,
     hist_hidden,
     load_bounds,
     load_params,
     overlay_bounds,
+    public_bounds,
     scale_issues,
     tags_for,
 )
@@ -79,6 +80,7 @@ def dump(
     solve = load_solve(slug, root)
     param_types, return_type = load_sig_types(root, slug)
     params = load_params(root, slug)
+    overlay = any(v is not None for v in (n_min, n_max, elem_min, elem_max, param_bounds))
     bounds = overlay_bounds(
         load_bounds(root, slug),
         n_min=n_min,
@@ -95,7 +97,8 @@ def dump(
     int64_bad = 0
     oversize = 0
     solve_err = 0
-    bound_codes: list[str] = []
+    bound_hits: list[dict] = []
+    hit_acc: dict[tuple, dict] = {}
     chunks: list[str] = []
     for r in rows:
         args = r.get("args")
@@ -114,7 +117,14 @@ def dump(
             int32_bad += 1
         if bad64:
             int64_bad += 1
-        bound_codes.extend(check_case(args or [], params, bounds))
+        for h in check_hits(args or [], params, bounds):
+            key = (h["code"], h["param"])
+            prev = hit_acc.get(key)
+            if prev is None:
+                hit_acc[key] = h
+            elif isinstance(h.get("got"), int) and isinstance(prev.get("got"), int):
+                if abs(h["got"]) > abs(prev["got"]):
+                    hit_acc[key] = h
         if rec["hidden"]:
             hidden += 1
             hns.append(case_n(args or []))
@@ -122,8 +132,22 @@ def dump(
         else:
             public += 1
     n_kind = "length" if any(k == "length" for k in kinds) else "scalar"
+    bound_hits = list(hit_acc.values())
+    bound_codes = list(dict.fromkeys(h["code"] for h in bound_hits))
     scale_codes = scale_issues(hns, n_kind, bounds)
     issue_codes = list(dict.fromkeys(bound_codes + scale_codes))
+    issues: list[str] = []
+    for code in issue_codes:
+        if code == "out_of_bounds":
+            for h in bound_hits:
+                if h["code"] == "out_of_bounds":
+                    issues.append(
+                        f"out_of_bounds param={h['param']} got={h['got']} min={h['min']} max={h['max']}"
+                    )
+        else:
+            issues.append(code)
+    for warn in bounds.get("warnings") or []:
+        issues.append(warn)
     ok = (
         2 <= public <= 3
         and hidden >= 20
@@ -132,6 +156,7 @@ def dump(
         and oversize == 0
         and solve_err == 0
         and not issue_codes
+        and not (bounds.get("warnings") or [])
     )
     path = root / "problems" / slug / "tests.jsonl"
     path.write_text("".join(chunks), encoding="utf-8")
@@ -150,9 +175,14 @@ def dump(
         "int64_bad": int64_bad,
         "oversize_lines": oversize,
         "solve_err": solve_err,
-        "issues": issue_codes,
+        "issues": issues,
         "tags": tags_for(issue_codes),
+        "bounds": public_bounds(bounds),
+        "overlay": overlay,
+        "bound_hits": bound_hits,
     }
-    print(json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
+    from utf8io import dump
+
+    dump(summary)
     if not ok:
         raise SystemExit(1)

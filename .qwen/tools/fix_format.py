@@ -8,6 +8,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+_TOOLS = Path(__file__).resolve().parent
+if str(_TOOLS) not in sys.path:
+    sys.path.insert(0, str(_TOOLS))
+from constraints import load_bounds  # noqa: E402
+from utf8io import dump  # noqa: E402
+
 BOUND_DEFAULTS = (
     ("n_min", "1"),
     ("n_max", "100000"),
@@ -22,6 +28,7 @@ def _run(script: Path, slug: str, root: Path) -> dict:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        env={**__import__("os").environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"},
     )
     line = (proc.stdout or "").strip().splitlines()[-1] if (proc.stdout or "").strip() else ""
     try:
@@ -67,11 +74,18 @@ def main() -> int:
     }
     if meta.is_file():
         out["meta_bounds_filled"] = ensure_meta_bounds(meta)
+        b = load_bounds(root, args.slug)
+        warns = list(b.get("warnings") or [])
+        notes = list(b.get("notes") or [])
+        if warns:
+            out.setdefault("issues", []).extend(warns)
+            out["ok"] = False
+        if notes:
+            out["bounds_notes"] = notes
     elif not (root / "problems" / args.slug).is_dir():
         out["ok"] = False
         out["issues"] = ["missing problem dir"]
-        json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
-        print()
+        dump(out)
         return 1
     out["examples"] = _run(scripts / "normalize_examples.py", args.slug, root)
     if not out["examples"].get("ok", False):
@@ -80,8 +94,7 @@ def main() -> int:
         out["starters"] = _run(scripts / "write_starters.py", args.slug, root)
         if not out["starters"].get("ok", False):
             out["ok"] = False
-    json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
-    print()
+    dump(out)
     return 0 if out["ok"] else 1
 
 
