@@ -6,7 +6,7 @@
 
 Python 3；C：`gcc -std=gnu11`；C++20：`-std=c++20`，语言 id `cpp17`，starter 文件名 `cpp17.cpp`，界面显示 C++20。
 
-JS / Go / Rust / Zig 为桩，提交 `NA`。
+JavaScript、TypeScript、Go、Rust、Zig 均可评测（主机须有对应编译器 / 运行时）。Zig 按 `zig version` 分派 0.14 / 0.16 驱动。
 
 ## 类型
 

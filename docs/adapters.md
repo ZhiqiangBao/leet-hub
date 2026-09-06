@@ -8,7 +8,7 @@
 
 基类：[`backend/app/judge/base.py`](../backend/app/judge/base.py)。  
 已实现：[`python3.py`](../backend/app/judge/languages/python3.py)、[`c11.py`](../backend/app/judge/languages/c11.py)、[`cpp17.py`](../backend/app/judge/languages/cpp17.py)、[`javascript.py`](../backend/app/judge/languages/javascript.py)、[`typescript.py`](../backend/app/judge/languages/typescript.py)、[`go.py`](../backend/app/judge/languages/go.py)、[`rust.py`](../backend/app/judge/languages/rust.py)、[`zig.py`](../backend/app/judge/languages/zig.py)。  
-Zig 驱动按主机 `zig version` 选 0.14 / 0.15 / 0.16 的 IO 与 ArrayList。Go / Rust 按 `go version` / `rustc --version` 写 `go.mod` 与 `--edition`。
+Zig 驱动按主机 `zig version` 选 0.14 或 0.16 的 IO / 分配器 / `ObjectMap`（0.15 有分支未实编）。Go / Rust 按 `go version` / `rustc --version` 写 `go.mod` 与 `--edition`。
 
 工具链装在评测主机；适配器代码进 Git 后由主机拉取。见 [server.md](server.md)。题目格式见 [problems.md](problems.md)。
 
@@ -122,9 +122,10 @@ class LanguageAdapter:
 
 ### Zig（`zig`）
 
-- `detect`：`shutil.which("zig")`。将 `zig` 加入 PATH。
-- `zig build-exe solution.zig -O ReleaseFast -femit-bin=program`（随版本改参数）。
-- 驱动用 `std.json`。API 随 Zig 版本变化，按评测主机上的版本编写。
+- `detect`：找 `/usr/bin/zig`、`/usr/local/bin/zig`。systemd 必须能看见该路径，只改用户 `PATH` 不够。
+- `zig build-exe solution.zig -O ReleaseFast -femit-bin=program`。
+- `wrap` 读 `zig version`：0.14 用 `GeneralPurposeAllocator` 与 `std.io`；0.16 用 `smp_allocator`、`std.Io.Threaded` 与 `std.Io.File`（`std.fs.File` 在 0.16 已不存在）。`obj.get` 得到的是 `Value`，不要 `.*`。
+- 驱动用 `std.json`。用户代码不要写 `main`。装编译器见 [toolchains.md](toolchains.md)。
 
 ## 最小骨架
 
