@@ -1,0 +1,19 @@
+slug: median-in-range-triplets
+title: 区间中位三元组
+difficulty: medium
+time_limit_ms: 1000
+memory_limit_mb: 256
+tags:
+  - sorting
+  - math
+n_min: 1
+n_max: 1500
+elem_min: -1000000000
+elem_max: 1000000000
+param_bounds:
+  lo:
+    min: -1000000000
+    max: 1000000000
+  hi:
+    min: -1000000000
+    max: 1000000000

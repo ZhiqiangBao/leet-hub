@@ -1,0 +1,11 @@
+class_name: Solution
+method: maxDistinctThreshold
+params:
+  - name: nums
+    type: List[int]
+  - name: k
+    type: int
+  - name: m
+    type: int
+return_type: int
+compare: exact

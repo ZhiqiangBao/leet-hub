@@ -1,0 +1,20 @@
+slug: distinct-window-rank
+title: 最多不同元素窗口数达标线
+difficulty: hard
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - sliding-window
+  - binary-search
+  - hash
+n_min: 1
+n_max: 100000
+elem_min: -1000000000
+elem_max: 1000000000
+param_bounds:
+  k:
+    min: 1
+    max: 100000
+  m:
+    min: 1
+    max: 1000000000

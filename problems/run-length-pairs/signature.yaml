@@ -1,0 +1,6 @@
+class_name: Solution
+method: countEqualRunPairs
+params:
+  - name: s
+    type: str
+return_type: long

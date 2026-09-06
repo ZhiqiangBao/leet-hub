@@ -1,0 +1,13 @@
+slug: product-triple-count
+title: 积等三元组计数
+difficulty: easy
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - array
+  - hash
+  - math
+n_min: 1
+n_max: 100
+elem_min: 1
+elem_max: 300

@@ -1,0 +1,13 @@
+slug: run-length-pairs
+title: 等长零一游程配对
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - string
+  - hash
+  - math
+n_min: 1
+n_max: 100000
+elem_min: 0
+elem_max: 1

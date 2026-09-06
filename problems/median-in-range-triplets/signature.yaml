@@ -1,0 +1,10 @@
+class_name: Solution
+method: count_median_in_range
+params:
+  - name: nums
+    type: List[int]
+  - name: lo
+    type: int
+  - name: hi
+    type: int
+return_type: int
