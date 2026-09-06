@@ -228,19 +228,52 @@ th { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.0
 .editor-bar select { width: auto; min-width: 168px; flex: 0 0 auto; }
 
 @media (max-aspect-ratio: 1/1), (max-width: 720px) {
+  html, body, #app {
+    height: auto;
+    min-height: 100%;
+  }
+  .app-shell {
+    height: auto;
+    min-height: 100svh;
+    max-height: none;
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    padding: 8px 12px;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  .topbar nav {
+    gap: 12px;
+    font-size: 14px;
+  }
   .workspace {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(160px, 38%) minmax(220px, 1fr);
+    display: block;
+    flex: none;
+    height: auto;
+    min-height: 0;
   }
   .statement {
     border-right: 0;
-    border-bottom: 1px solid var(--line);
+    overflow: visible;
   }
   .statement, .editor-pane {
-    padding: 12px 14px 10px;
+    padding: 12px 14px 16px;
   }
   .editor-pane {
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    overflow: visible;
+    min-height: 0;
+    border-top: 1px solid var(--line);
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  .editor-wrap {
+    flex: none;
+    height: 70vh;
+    min-height: 360px;
   }
   .editor-bar {
     flex-wrap: wrap;
@@ -256,17 +289,6 @@ th { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.0
   .draft-hint {
     flex: 1 1 auto;
     min-width: 0;
-  }
-  .topbar {
-    flex-wrap: wrap;
-    gap: 10px 16px;
-    padding: 8px 12px;
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
-  }
-  .topbar nav {
-    gap: 12px;
-    font-size: 14px;
   }
 }
 .bar-hint { margin: 0 0 10px; }
