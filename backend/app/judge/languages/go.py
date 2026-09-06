@@ -274,6 +274,8 @@ class GoAdapter(LanguageAdapter):
             encoding="utf-8",
         )
         out = "program.exe" if os.name == "nt" else "program"
+        scratch = Path(workdir) / ".scratch"
+        scratch.mkdir(parents=True, exist_ok=True)
         result = run_limited(
             [compiler, "build", "-o", out, self.source_filename],
             cwd=Path(workdir),
@@ -286,6 +288,11 @@ class GoAdapter(LanguageAdapter):
                 "GOSUMDB": "off",
                 "GOFLAGS": "-mod=mod",
                 "GOTOOLCHAIN": "local",
+                "GOENV": "off",
+                "GOCACHE": str(scratch / "gocache"),
+                "GOTMPDIR": str(scratch / "gotmp"),
+                "GOMODCACHE": str(scratch / "gomod"),
+                "GOPATH": str(scratch / "gopath"),
             },
         )
         if result.tle:

@@ -88,7 +88,7 @@ zig version
 1. 仍先试 `golang-go`，能编过 `scripts/selftest.py` 里的 Go 用例就不用换。
 2. 不行再装官方包（不是本仓库源码站）：<https://go.dev/dl/> ，解压到 `/usr/local/go`，保证 `/usr/local/go/bin/go` 存在。适配器会找 `/usr/bin/go` 与 `/usr/local/go/bin/go`。
 
-评测设置了 `GOPROXY=off`，不要 `go get`。
+评测设置了 `GOPROXY=off`，不要 `go get`。构建缓存写在作业临时目录，评测结束删除，不占用 `~/.cache/go-build`。
 
 ### Rust
 
@@ -110,7 +110,7 @@ sudo systemctl restart local-leet
 | 主机 `zig version` | 驱动要点 |
 | --- | --- |
 | 0.14.x | `GeneralPurposeAllocator`、`std.io.getStdIn`、`ObjectMap.init` |
-| 0.16.x | `smp_allocator`、`std.Io.File` + `std.Io.Threaded`、`ObjectMap = .empty` 且 `put(alloc, …)` |
+| 0.16.x | `smp_allocator`、`posix`/`linux.write` 读写 stdin（不拉 `Threaded`）、`ObjectMap = .empty` 且 `put(alloc, …)` |
 | 0.15.x | 有分支，未实编 |
 | 0.17+ | 不要用 |
 
@@ -120,6 +120,8 @@ sudo systemctl restart local-leet
 | 想用 0.16，apt 仍是 0.14 | 按上文卸 apt 包，装官方 0.16 到 `/usr/local` |
 | 误装 snap / 0.17-dev | 卸掉，改回 0.14 或 0.16 |
 | **25.04 及更早**，仓库里没有 `zig` | **不要** `snap install zig`。从 [ziglang.org/download](https://ziglang.org/zh-CN/download/) 下 **0.14.1** 或 **0.16.0** 的 `zig-x86_64-linux-*.tar.xz` |
+
+编译用 `-O Debug`（Linux x86_64 走自托管后端，比 LLVM `ReleaseFast` 快很多；运行会慢于优化编译）。稳定驱动源码在 `data/zig-harness/`（很小、覆盖写入）。编译缓存只写在当次作业目录，评测结束删掉，避免 `~/.cache/zig` 或 `data/zig-cache` 一直涨。
 
 Zig 源码托管已迁到 Codeberg，**二进制仍从 ziglang.org 下**。
 

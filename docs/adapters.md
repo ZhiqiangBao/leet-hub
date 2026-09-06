@@ -71,6 +71,7 @@ class LanguageAdapter:
 - **解释型**（Python、Node）：`compile` 可语法检查或返回 `CompileResult(ok=True)`；`run_argv` 为解释器命令，cwd 为 `workdir`。
 - **编译型**：在 `workdir` 调编译器，产物名固定（如 `program`）。失败时 `CompileResult(ok=False, log=编译器输出)`。
 - 编译请使用 `run_limited(..., for_compile=True)`，避免桌面用户进程数限制导致 `g++` 起不来 `cc1plus`。运行用户程序不要设 `for_compile`。
+- 编译型与常见竞赛一致：C/C++ `-O2`，Rust `-O`，Go 默认 `go build`。Zig 用 `-O Debug`（Linux x86_64 走自托管后端）。编译缓存和临时文件只写在当次作业目录（含 Go 的 `GOCACHE`），评测结束删除。
 - 评测无外网。禁止 `cargo add`、`go get`、`npm install`。JSON 用标准库，或把单文件解析器 `copy` 进 `workdir`（C 的 `json.h`、C++ 的 `mini_json.hpp`）。
 
 ## 登记清单
@@ -110,7 +111,7 @@ class LanguageAdapter:
 ### Go（`go`）
 
 - `detect`：`shutil.which("go")`。主机：`sudo apt install golang-go`。
-- 在 `workdir` 写最小 `go.mod`（`module solution`），`go build -o program solution.go`，`GOPROXY=off`。
+- 在 `workdir` 写最小 `go.mod`（`module solution`），`go build -o program solution.go`，`GOPROXY=off`。`GOCACHE` / `GOTMPDIR` / `GOPATH` 指到作业目录，不写 `~/.cache/go-build`。
 - 用户代码已含 `package main`；驱动只拼在同一文件后面，不要再写一行 `package`。
 - 驱动用 `encoding/json`。方法若要导出须大写，驱动里写死对 `signature.method` 的调用。
 - `go.mod` 不引用外部 module。
@@ -123,8 +124,8 @@ class LanguageAdapter:
 ### Zig（`zig`）
 
 - `detect`：找 `/usr/bin/zig`、`/usr/local/bin/zig`。systemd 必须能看见该路径，只改用户 `PATH` 不够。
-- `zig build-exe solution.zig -O ReleaseFast -femit-bin=program`。
-- `wrap` 读 `zig version`：0.14 用 `GeneralPurposeAllocator` 与 `std.io`；0.16 用 `smp_allocator`、`std.Io.Threaded` 与 `std.Io.File`（`std.fs.File` 在 0.16 已不存在）。`obj.get` 得到的是 `Value`，不要 `.*`。
+- `zig build-exe -O Debug`，根模块是用户 `solution.zig`，稳定驱动是 `data/zig-harness/leet_harness_*.zig`（`@import("leet")`）。Linux x86_64 的 Debug 默认自托管后端。JSON/IO 在驱动里。编译缓存放在作业 `workdir`，评测结束删除，不留 `data/zig-cache`。
+- `wrap` 读 `zig version`：0.14 用 `GeneralPurposeAllocator` 与 `std.io`；0.16 用 `smp_allocator` 与 `posix`/`linux.write` 做 stdin/stdout，**不**引入 `std.Io.Threaded`（否则首次编译会非常慢）。`obj.get` 得到的是 `Value`，不要 `.*`。
 - 驱动用 `std.json`。用户代码不要写 `main`。装编译器见 [toolchains.md](toolchains.md)。
 
 ## 最小骨架

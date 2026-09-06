@@ -91,11 +91,20 @@ def run_limited(
     wall = time_ms / 1000.0 + 1.0
     cmd = wrap_linux(argv, time_ms, memory_mb, for_compile=for_compile)
 
+    scratch = Path(cwd) / ".scratch"
+    scratch.mkdir(parents=True, exist_ok=True)
+    scratch_s = str(scratch)
     env = {
         **os.environ,
         "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONPYCACHEPREFIX": scratch_s,
         "PYTHONIOENCODING": "utf-8",
         "PYTHONUNBUFFERED": "1",
+        "TMPDIR": scratch_s,
+        "TMP": scratch_s,
+        "TEMP": scratch_s,
+        "XDG_CACHE_HOME": scratch_s,
+        "XDG_CONFIG_HOME": scratch_s,
     }
     if extra_env:
         env.update(extra_env)

@@ -3,11 +3,17 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from ...config import DATA_DIR
 from ..base import CompileResult, LanguageAdapter
 from ..sandbox import run_limited
 from .bins import find_tool
 from .idents import inner_list
 from .versions import fmt_version, zig_flavor, zig_version
+
+# Debug uses Zig's self-hosted x86_64 backend on Linux (~5x vs LLVM).
+# Per-job cache lives in workdir and is deleted with the TemporaryDirectory.
+ZIG_COMPILE_MS = 30000
+ZIG_OPT = "Debug"
 
 # Ubuntu 26.04 `apt install zig` provides Zig 0.14.x (zig-defaults → zig0.14).
 
@@ -175,22 +181,34 @@ def zig_runtime_bits(flavor: str) -> dict[str, str]:
             "tests_new": "    var tests: std.ArrayList([]const u8) = .empty;",
             "tests_append": "        try tests.append(alloc, line);",
             "stdin": (
-                "    var threaded = std.Io.Threaded.init(alloc, .{});\n"
-                "    defer threaded.deinit();\n"
-                "    const io = threaded.io();\n"
-                "    var in_buf: [4096]u8 = undefined;\n"
-                "    var stdin_reader = std.Io.File.stdin().readerStreaming(io, &in_buf);\n"
-                "    const data = try stdin_reader.interface.allocRemaining(alloc, .limited(32 * 1024 * 1024));"
+                "    var list: std.ArrayList(u8) = .empty;\n"
+                "    var tmp: [8192]u8 = undefined;\n"
+                "    while (true) {\n"
+                "        const n = std.posix.read(std.posix.STDIN_FILENO, &tmp) catch |err| switch (err) {\n"
+                "            error.WouldBlock => continue,\n"
+                "            else => return err,\n"
+                "        };\n"
+                "        if (n == 0) break;\n"
+                "        try list.appendSlice(alloc, tmp[0..n]);\n"
+                "    }\n"
+                "    return list.toOwnedSlice(alloc);"
             ),
             "stdout": (
-                "    var threaded = std.Io.Threaded.init(alloc, .{});\n"
-                "    defer threaded.deinit();\n"
-                "    const io = threaded.io();\n"
-                "    var out_buf: [256]u8 = undefined;\n"
-                "    var stdout_writer = std.Io.File.stdout().writerStreaming(io, &out_buf);\n"
-                "    try stdout_writer.interface.writeAll(s);\n"
-                '    try stdout_writer.interface.writeAll("\\n");\n'
-                "    try stdout_writer.interface.flush();"
+                "    var off: usize = 0;\n"
+                "    while (off < s.len) {\n"
+                "        const rc = std.os.linux.write(1, s[off..].ptr, s.len - off);\n"
+                "        const signed: isize = @bitCast(rc);\n"
+                "        if (signed < 0 or rc == 0) return error.WriteFailed;\n"
+                "        off += rc;\n"
+                "    }\n"
+                "    off = 0;\n"
+                '    const nl = "\\n";\n'
+                "    while (off < nl.len) {\n"
+                "        const rc = std.os.linux.write(1, nl[off..].ptr, nl.len - off);\n"
+                "        const signed: isize = @bitCast(rc);\n"
+                "        if (signed < 0 or rc == 0) return error.WriteFailed;\n"
+                "        off += rc;\n"
+                "    }"
             ),
         }
     if flavor == "15":
@@ -205,7 +223,7 @@ def zig_runtime_bits(flavor: str) -> dict[str, str]:
             "dump_owned": "    return out.toOwnedSlice();",
             "tests_new": "    var tests = std.ArrayList([]const u8).init(alloc);",
             "tests_append": "        try tests.append(line);",
-            "stdin": "    const data = try std.fs.File.stdin().readToEndAlloc(alloc, 32 * 1024 * 1024);",
+            "stdin": "    return std.fs.File.stdin().readToEndAlloc(alloc, 32 * 1024 * 1024);",
             "stdout": (
                 "    try std.fs.File.stdout().writeAll(s);\n"
                 '    try std.fs.File.stdout().writeAll("\\n");'
@@ -222,7 +240,7 @@ def zig_runtime_bits(flavor: str) -> dict[str, str]:
         "dump_owned": "    return out.toOwnedSlice();",
         "tests_new": "    var tests = std.ArrayList([]const u8).init(alloc);",
         "tests_append": "        try tests.append(line);",
-        "stdin": "    const data = try std.io.getStdIn().reader().readAllAlloc(alloc, 32 * 1024 * 1024);",
+        "stdin": "    return std.io.getStdIn().reader().readAllAlloc(alloc, 32 * 1024 * 1024);",
         "stdout": '    try std.io.getStdOut().writer().print("{s}\\n", .{s});',
     }
 
@@ -230,7 +248,7 @@ def zig_runtime_bits(flavor: str) -> dict[str, str]:
 def zig_helpers(flavor: str) -> str:
     b = zig_runtime_bits(flavor)
     return f'''
-fn leetClose(a: std.json.Value, b: std.json.Value) bool {{
+pub fn leetClose(a: std.json.Value, b: std.json.Value) bool {{
     return switch (a) {{
         .null => b == .null,
         .bool => |x| switch (b) {{ .bool => |y| x == y, else => false }},
@@ -270,18 +288,18 @@ fn leetClose(a: std.json.Value, b: std.json.Value) bool {{
     }};
 }}
 
-fn leetPush(alloc: std.mem.Allocator, out: *std.ArrayList(u8), s: []const u8) !void {{
+pub fn leetPush(alloc: std.mem.Allocator, out: *std.ArrayList(u8), s: []const u8) !void {{
 {"" if flavor == "16" else "    _ = alloc;"}
     {"try out.appendSlice(alloc, s);" if flavor == "16" else "try out.appendSlice(s);"}
 }}
 
-fn leetDump(alloc: std.mem.Allocator, v: std.json.Value) ![]u8 {{
+pub fn leetDump(alloc: std.mem.Allocator, v: std.json.Value) ![]u8 {{
 {b["dump_new"]}
     try leetDumpInto(alloc, &out, v);
 {b["dump_owned"]}
 }}
 
-fn leetDumpInto(alloc: std.mem.Allocator, out: *std.ArrayList(u8), v: std.json.Value) !void {{
+pub fn leetDumpInto(alloc: std.mem.Allocator, out: *std.ArrayList(u8), v: std.json.Value) !void {{
     switch (v) {{
         .null => try leetPush(alloc, out, "null"),
         .bool => |flag| try leetPush(alloc, out, if (flag) "true" else "false"),
@@ -326,7 +344,7 @@ fn leetDumpInto(alloc: std.mem.Allocator, out: *std.ArrayList(u8), v: std.json.V
     }}
 }}
 
-fn leetEq(alloc: std.mem.Allocator, got: std.json.Value, expected: std.json.Value, any_order: bool) !bool {{
+pub fn leetEq(alloc: std.mem.Allocator, got: std.json.Value, expected: std.json.Value, any_order: bool) !bool {{
     if (any_order) {{
         switch (got) {{
             .array => |g| switch (expected) {{
@@ -356,11 +374,117 @@ fn leetEq(alloc: std.mem.Allocator, got: std.json.Value, expected: std.json.Valu
     return leetClose(got, expected);
 }}
 
-fn leetWrite(alloc: std.mem.Allocator, v: std.json.Value) !void {{
+pub fn leetWrite(alloc: std.mem.Allocator, v: std.json.Value) !void {{
     const s = try leetDump(alloc, v);
 {b["stdout"]}
 }}
 '''
+
+
+def zig_harness_source(flavor: str) -> str:
+    b = zig_runtime_bits(flavor)
+    if flavor == "16":
+        obj_new = "var o: std.json.ObjectMap = .empty;"
+
+        def put(key: str, expr: str) -> str:
+            return f'try o.put(alloc, "{key}", {expr});'
+    else:
+        obj_new = "var o = std.json.ObjectMap.init(alloc);"
+
+        def put(key: str, expr: str) -> str:
+            return f'try o.put("{key}", {expr});'
+
+    str_re = put("verdict", '.{ .string = "RE" }')
+    str_wa = put("verdict", '.{ .string = "WA" }')
+    str_ac = put("verdict", '.{ .string = "AC" }')
+    msg_parse = put("message", '.{ .string = "json parse" }')
+    msg_runtime = put("message", '.{ .string = "runtime" }')
+    put_failed = put("failed_index", ".{ .integer = @intCast(index) }")
+    put_got = put("got", "gotj")
+    put_passed_i = put("passed", ".{ .integer = @intCast(index) }")
+    put_passed_t = put("passed", ".{ .integer = total }")
+    put_total = put("total", ".{ .integer = total }")
+    return f'''const std = @import("std");
+{zig_helpers(flavor)}
+
+pub const SolveFn = *const fn (std.mem.Allocator, std.json.Value) anyerror!std.json.Value;
+
+pub fn leetParse(alloc: std.mem.Allocator, line: []const u8) !std.json.Parsed(std.json.Value) {{
+    return std.json.parseFromSlice(std.json.Value, alloc, line, .{{}});
+}}
+
+pub fn leetReadAll(alloc: std.mem.Allocator) ![]u8 {{
+{b["stdin"]}
+}}
+
+pub fn run(alloc: std.mem.Allocator, solve: SolveFn, any_order: bool) !void {{
+    const data = try leetReadAll(alloc);
+{b["tests_new"]}
+    var it = std.mem.splitScalar(u8, data, '\\n');
+    while (it.next()) |raw| {{
+        const line = std.mem.trim(u8, raw, " \\r");
+        if (line.len == 0) continue;
+{b["tests_append"]}
+    }}
+    const total: i64 = @intCast(tests.items.len);
+    for (tests.items, 0..) |line, index| {{
+        var parsed = leetParse(alloc, line) catch {{
+            {obj_new}
+            {str_re}
+            {msg_parse}
+            try leetWrite(alloc, .{{ .object = o }});
+            return;
+        }};
+        defer parsed.deinit();
+        const obj = parsed.value.object;
+        const args_v = obj.get("args") orelse return error.MissingArgs;
+        const expected = obj.get("expected") orelse return error.MissingExpected;
+        const gotj = solve(alloc, args_v) catch {{
+            {obj_new}
+            {str_re}
+            {put_failed}
+            {msg_runtime}
+            {put_passed_i}
+            {put_total}
+            try leetWrite(alloc, .{{ .object = o }});
+            return;
+        }};
+        if (!try leetEq(alloc, gotj, expected, any_order)) {{
+            {obj_new}
+            {str_wa}
+            {put_failed}
+            {put_got}
+            {put_passed_i}
+            {put_total}
+            try leetWrite(alloc, .{{ .object = o }});
+            return;
+        }}
+    }}
+    {obj_new}
+    {str_ac}
+    {put_passed_t}
+    {put_total}
+    try leetWrite(alloc, .{{ .object = o }});
+}}
+'''
+
+
+def zig_harness_path(flavor: str) -> Path:
+    folder = DATA_DIR / "zig-harness"
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder / f"leet_harness_{flavor}.zig"
+
+
+def write_zig_harness(flavor: str) -> Path:
+    path = zig_harness_path(flavor)
+    text = zig_harness_source(flavor)
+    if not path.is_file() or path.read_text(encoding="utf-8") != text:
+        path.write_text(text, encoding="utf-8")
+    return path
+
+
+def zig_posix_path(path: Path) -> str:
+    return path.resolve().as_posix()
 
 
 def wrap_zig(user_code: str, signature: dict, flavor: str = "14") -> str:
@@ -372,100 +496,42 @@ def wrap_zig(user_code: str, signature: dict, flavor: str = "14") -> str:
     types = [p["type"] for p in params] + [return_type]
     converters = emit_zig_converters(types, flavor)
     bits = zig_runtime_bits(flavor)
-    helpers = zig_helpers(flavor)
     bind_lines = []
     call_args = []
     for i, p in enumerate(params):
         bind_lines.append(
-            f"            const arg{i} = {call_from(p['type'], f'args.items[{i}]')};"
+            f"    const arg{i} = {call_from(p['type'], f'args.items[{i}]')};"
         )
         call_args.append(f"arg{i}")
     bind = "\n".join(bind_lines)
     call = ", ".join(call_args)
     any_order = "true" if compare == "any_order" else "false"
     to_got = call_to(return_type, "got")
+    uses_alloc = any(needs_alloc(t) for t in types)
+    discard_alloc = "    _ = alloc;\n" if not uses_alloc else ""
     body = user_code.rstrip()
     if '@import("std")' not in body and "@import(\"std\")" not in body:
         body = 'const std = @import("std");\n\n' + body
-    if flavor == "16":
-        map_new = "var o: std.json.ObjectMap = .empty;"
-        put_verdict_re = 'try o.put(alloc, "verdict", .{ .string = "RE" });'
-        put_message = 'try o.put(alloc, "message", .{ .string = "json parse" });'
-        put_verdict_wa = 'try o.put(alloc, "verdict", .{ .string = "WA" });'
-        put_failed = 'try o.put(alloc, "failed_index", .{ .integer = @intCast(index) });'
-        put_got = 'try o.put(alloc, "got", gotj);'
-        put_passed = 'try o.put(alloc, "passed", .{ .integer = @intCast(index) });'
-        put_total_wa = 'try o.put(alloc, "total", .{ .integer = total });'
-        put_verdict_ac = 'try o.put(alloc, "verdict", .{ .string = "AC" });'
-        put_passed_ac = 'try o.put(alloc, "passed", .{ .integer = total });'
-        put_total_ac = 'try o.put(alloc, "total", .{ .integer = total });'
-    else:
-        map_new = "var o = std.json.ObjectMap.init(alloc);"
-        put_verdict_re = 'try o.put("verdict", .{ .string = "RE" });'
-        put_message = 'try o.put("message", .{ .string = "json parse" });'
-        put_verdict_wa = 'try o.put("verdict", .{ .string = "WA" });'
-        put_failed = 'try o.put("failed_index", .{ .integer = @intCast(index) });'
-        put_got = 'try o.put("got", gotj);'
-        put_passed = 'try o.put("passed", .{ .integer = @intCast(index) });'
-        put_total_wa = 'try o.put("total", .{ .integer = total });'
-        put_verdict_ac = 'try o.put("verdict", .{ .string = "AC" });'
-        put_passed_ac = 'try o.put("passed", .{ .integer = total });'
-        put_total_ac = 'try o.put("total", .{ .integer = total });'
     return f'''{body}
+
+const leet = @import("leet");
 
 {converters}
 
-{helpers}
+fn leetSolve(alloc: std.mem.Allocator, args_v: std.json.Value) anyerror!std.json.Value {{
+{discard_alloc}    const args = switch (args_v) {{
+        .array => |a| a,
+        else => return error.BadArgs,
+    }};
+{bind}
+    const sol = {class_name}{{}};
+    const got = sol.{method}({call});
+    return {to_got};
+}}
 
 pub fn main() !void {{
 {bits["alloc"]}
-{bits["stdin"]}
-{bits["tests_new"]}
-    var it = std.mem.splitScalar(u8, data, '\\n');
-    while (it.next()) |raw| {{
-        const line = std.mem.trim(u8, raw, " \\r");
-        if (line.len == 0) continue;
-{bits["tests_append"]}
-    }}
-    const total: i64 = @intCast(tests.items.len);
-    const sol = {class_name}{{}};
-    for (tests.items, 0..) |line, index| {{
-        var parsed = std.json.parseFromSlice(std.json.Value, alloc, line, .{{}}) catch {{
-            try leetWrite(alloc, .{{ .object = blk: {{
-                {map_new}
-                {put_verdict_re}
-                {put_message}
-                break :blk o;
-            }} }});
-            return;
-        }};
-        defer parsed.deinit();
-        const obj = parsed.value.object;
-        const args_v = obj.get("args") orelse return error.MissingArgs;
-        const expected = obj.get("expected") orelse return error.MissingExpected;
-        const args = switch (args_v) {{
-            .array => |a| a,
-            else => return error.BadArgs,
-        }};
-{bind}
-        const got = sol.{method}({call});
-        const gotj = {to_got};
-        if (!try leetEq(alloc, gotj, expected, {any_order})) {{
-            {map_new}
-            {put_verdict_wa}
-            {put_failed}
-            {put_got}
-            {put_passed}
-            {put_total_wa}
-            try leetWrite(alloc, .{{ .object = o }});
-            return;
-        }}
-    }}
-    {map_new}
-    {put_verdict_ac}
-    {put_passed_ac}
-    {put_total_ac}
-    try leetWrite(alloc, .{{ .object = o }});
+    try leet.run(alloc, leetSolve, {any_order});
 }}
 '''
 
@@ -496,13 +562,35 @@ class ZigAdapter(LanguageAdapter):
         if not compiler:
             return CompileResult(ok=False, log="zig not found")
         out = "program.exe" if os.name == "nt" else "program"
+        cache = Path(workdir) / ".zig-cache"
+        (cache / "global").mkdir(parents=True, exist_ok=True)
+        (cache / "local").mkdir(parents=True, exist_ok=True)
+        flavor = zig_flavor(zig_version(compiler))
+        harness = write_zig_harness(flavor)
+        argv = [
+            compiler,
+            "build-exe",
+            f"-femit-bin={out}",
+            "--dep",
+            "leet",
+            "-O",
+            ZIG_OPT,
+            f"-Mroot={self.source_filename}",
+            "-O",
+            ZIG_OPT,
+            f"-Mleet={zig_posix_path(harness)}",
+        ]
         result = run_limited(
-            [compiler, "build-exe", self.source_filename, "-O", "ReleaseFast", f"-femit-bin={out}"],
+            argv,
             cwd=Path(workdir),
             stdin="",
-            time_ms=30000,
+            time_ms=ZIG_COMPILE_MS,
             memory_mb=4096,
             for_compile=True,
+            extra_env={
+                "ZIG_GLOBAL_CACHE_DIR": str(cache / "global"),
+                "ZIG_LOCAL_CACHE_DIR": str(cache / "local"),
+            },
         )
         if result.tle:
             return CompileResult(ok=False, log="compile timeout")
