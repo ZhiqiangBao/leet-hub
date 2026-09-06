@@ -88,7 +88,7 @@ class LanguageAdapter:
 
 对照 Python：用户 `class Solution`，驱动拼接在同一文件末尾，`python3 -I solution.py`。  
 对照 C：力扣式自由函数（无 `class Solution`），`List[int]` 展开为 `int* nums, int numsSize`，返回数组时再加 `int* returnSize`；`gcc -O2 -std=gnu11`，语言 id 为 `c`，starter 为 `starter/c.c`。  
-对照 C++：`#include <bits/stdc++.h>` 与 JSON 头，用户 `class Solution`，生成 `main` 调方法；`g++ -O2 -std=c++20`（含 `std::ranges`）。语言 id 仍为 `cpp17`，与 `starter/cpp17.cpp` 文件名一致。
+对照 C++：`leet_std.hpp`（含 `iostream` 等常用 STL，不含 `<bits/stdc++.h>`）与 JSON 头，用户 `class Solution`，生成 `main` 调方法；`g++ -O2 -std=c++20`（含 `std::ranges`）。语言 id 仍为 `cpp17`，与 `starter/cpp17.cpp` 文件名一致。
 
 ### JavaScript（`javascript`）
 

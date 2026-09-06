@@ -131,7 +131,7 @@ int* twoSum(int* nums, int numsSize, int target, int* returnSize) {
 }
 ```
 
-C++（驱动已包含 `<bits/stdc++.h>` 与 `using namespace std;`）：
+C++（驱动已包含 `iostream` 等常用 STL 与 `using namespace std;`，不要再 `#include <bits/stdc++.h>`）：
 
 ```cpp
 class Solution {

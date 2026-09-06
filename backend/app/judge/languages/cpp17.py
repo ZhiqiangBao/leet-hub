@@ -9,6 +9,7 @@ from ..base import CompileResult, LanguageAdapter
 from ..sandbox import run_limited
 
 JSON_HEADER = Path(__file__).resolve().parents[1] / "runtimes" / "cpp" / "mini_json.hpp"
+STD_HEADER = Path(__file__).resolve().parents[1] / "runtimes" / "cpp" / "leet_std.hpp"
 
 
 def cpp_type(type_name: str) -> str:
@@ -77,7 +78,7 @@ def wrap_cpp(user_code: str, signature: dict) -> str:
     bind = "\n".join(bind_lines) if bind_lines else ""
     call_args = ", ".join(f"arg{i}" for i in range(len(params)))
     any_order = "true" if compare == "any_order" else "false"
-    return f'''#include <bits/stdc++.h>
+    return f'''#include "leet_std.hpp"
 #include "mini_json.hpp"
 using namespace std;
 
@@ -160,6 +161,7 @@ class Cpp17Adapter(LanguageAdapter):
         compiler = self.gxx()
         if not compiler:
             return CompileResult(ok=False, log="g++ not found")
+        shutil.copy2(STD_HEADER, Path(workdir) / "leet_std.hpp")
         shutil.copy2(JSON_HEADER, Path(workdir) / "mini_json.hpp")
         result = run_limited(
             [compiler, "-O2", "-std=c++20", "-pipe", "-o", "program", self.source_filename],

@@ -38,6 +38,8 @@
 
 题面支持 `$…$` 公式（KaTeX）。测试只跑公开示例、不计分；提交跑全部隐藏测例、进该语言耗时榜。
 
+C++20 驱动已包含 `<iostream>` 和常用 STL（`vector` / `string` / `map` / `unordered_*` / `queue` / `algorithm` / `<ranges>` 等），以及 `using namespace std;`。**不要**再 `#include <bits/stdc++.h>`，否则每次 `g++ -O2` 都会把 regex、thread、filesystem 整份拉进来，编译会明显变慢。还需要别的头（如 `<regex>`、`<chrono>`、`<random>`）时，写在题解里即可。
+
 浏览器访问：
 
 ```text
