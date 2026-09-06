@@ -168,19 +168,32 @@ def emit_zig_converters(types: list[str], flavor: str = "14") -> str:
 def zig_runtime_bits(flavor: str) -> dict[str, str]:
     if flavor == "16":
         return {
+            "alloc": "    const alloc = std.heap.smp_allocator;",
             "dump_new": "    var out: std.ArrayList(u8) = .empty;",
             "dump_push": "    try out.appendSlice(alloc, s);",
             "dump_owned": "    return out.toOwnedSlice(alloc);",
             "tests_new": "    var tests: std.ArrayList([]const u8) = .empty;",
             "tests_append": "        try tests.append(alloc, line);",
-            "stdin": "    const data = try std.fs.File.stdin().readToEndAlloc(alloc, 32 * 1024 * 1024);",
+            "stdin": (
+                "    var in_buf: [4096]u8 = undefined;\n"
+                "    var stdin_reader = std.fs.File.stdin().reader(&in_buf);\n"
+                "    const data = try stdin_reader.interface.allocRemaining(alloc, .limited(32 * 1024 * 1024));"
+            ),
             "stdout": (
-                "    _ = try std.fs.File.stdout().write(s);\n"
-                '    _ = try std.fs.File.stdout().write("\\n");'
+                "    var out_buf: [256]u8 = undefined;\n"
+                "    var stdout_writer = std.fs.File.stdout().writer(&out_buf);\n"
+                "    try stdout_writer.interface.writeAll(s);\n"
+                '    try stdout_writer.interface.writeAll("\\n");\n'
+                "    try stdout_writer.interface.flush();"
             ),
         }
     if flavor == "15":
         return {
+            "alloc": (
+                "    var gpa = std.heap.GeneralPurposeAllocator(.{}){};\n"
+                "    defer _ = gpa.deinit();\n"
+                "    const alloc = gpa.allocator();"
+            ),
             "dump_new": "    var out = std.ArrayList(u8).init(alloc);",
             "dump_push": "    try out.appendSlice(s);",
             "dump_owned": "    return out.toOwnedSlice();",
@@ -193,6 +206,11 @@ def zig_runtime_bits(flavor: str) -> dict[str, str]:
             ),
         }
     return {
+        "alloc": (
+            "    var gpa = std.heap.GeneralPurposeAllocator(.{}){};\n"
+            "    defer _ = gpa.deinit();\n"
+            "    const alloc = gpa.allocator();"
+        ),
         "dump_new": "    var out = std.ArrayList(u8).init(alloc);",
         "dump_push": "    try out.appendSlice(s);",
         "dump_owned": "    return out.toOwnedSlice();",
@@ -363,6 +381,30 @@ def wrap_zig(user_code: str, signature: dict, flavor: str = "14") -> str:
     body = user_code.rstrip()
     if '@import("std")' not in body and "@import(\"std\")" not in body:
         body = 'const std = @import("std");\n\n' + body
+    if flavor == "16":
+        map_new = "var o: std.json.ObjectMap = .empty;"
+        put_verdict_re = 'try o.put(alloc, "verdict", .{ .string = "RE" });'
+        put_message = 'try o.put(alloc, "message", .{ .string = "json parse" });'
+        put_verdict_wa = 'try o.put(alloc, "verdict", .{ .string = "WA" });'
+        put_failed = 'try o.put(alloc, "failed_index", .{ .integer = @intCast(index) });'
+        put_got = 'try o.put(alloc, "got", gotj);'
+        put_passed = 'try o.put(alloc, "passed", .{ .integer = @intCast(index) });'
+        put_total_wa = 'try o.put(alloc, "total", .{ .integer = total });'
+        put_verdict_ac = 'try o.put(alloc, "verdict", .{ .string = "AC" });'
+        put_passed_ac = 'try o.put(alloc, "passed", .{ .integer = total });'
+        put_total_ac = 'try o.put(alloc, "total", .{ .integer = total });'
+    else:
+        map_new = "var o = std.json.ObjectMap.init(alloc);"
+        put_verdict_re = 'try o.put("verdict", .{ .string = "RE" });'
+        put_message = 'try o.put("message", .{ .string = "json parse" });'
+        put_verdict_wa = 'try o.put("verdict", .{ .string = "WA" });'
+        put_failed = 'try o.put("failed_index", .{ .integer = @intCast(index) });'
+        put_got = 'try o.put("got", gotj);'
+        put_passed = 'try o.put("passed", .{ .integer = @intCast(index) });'
+        put_total_wa = 'try o.put("total", .{ .integer = total });'
+        put_verdict_ac = 'try o.put("verdict", .{ .string = "AC" });'
+        put_passed_ac = 'try o.put("passed", .{ .integer = total });'
+        put_total_ac = 'try o.put("total", .{ .integer = total });'
     return f'''{body}
 
 {converters}
@@ -370,9 +412,7 @@ def wrap_zig(user_code: str, signature: dict, flavor: str = "14") -> str:
 {helpers}
 
 pub fn main() !void {{
-    var gpa = std.heap.GeneralPurposeAllocator(.{{}}){{}};
-    defer _ = gpa.deinit();
-    const alloc = gpa.allocator();
+{bits["alloc"]}
 {bits["stdin"]}
 {bits["tests_new"]}
     var it = std.mem.splitScalar(u8, data, '\\n');
@@ -386,9 +426,9 @@ pub fn main() !void {{
     for (tests.items, 0..) |line, index| {{
         var parsed = std.json.parseFromSlice(std.json.Value, alloc, line, .{{}}) catch {{
             try leetWrite(alloc, .{{ .object = blk: {{
-                var o = std.json.ObjectMap.init(alloc);
-                try o.put("verdict", .{{ .string = "RE" }});
-                try o.put("message", .{{ .string = "json parse" }});
+                {map_new}
+                {put_verdict_re}
+                {put_message}
                 break :blk o;
             }} }});
             return;
@@ -397,28 +437,28 @@ pub fn main() !void {{
         const obj = parsed.value.object;
         const args_v = obj.get("args") orelse return error.MissingArgs;
         const expected = obj.get("expected") orelse return error.MissingExpected;
-        const args = switch (args_v.*) {{
+        const args = switch (args_v) {{
             .array => |a| a,
             else => return error.BadArgs,
         }};
 {bind}
         const got = sol.{method}({call});
         const gotj = {to_got};
-        if (!try leetEq(alloc, gotj, expected.*, {any_order})) {{
-            var o = std.json.ObjectMap.init(alloc);
-            try o.put("verdict", .{{ .string = "WA" }});
-            try o.put("failed_index", .{{ .integer = @intCast(index) }});
-            try o.put("got", gotj);
-            try o.put("passed", .{{ .integer = @intCast(index) }});
-            try o.put("total", .{{ .integer = total }});
+        if (!try leetEq(alloc, gotj, expected, {any_order})) {{
+            {map_new}
+            {put_verdict_wa}
+            {put_failed}
+            {put_got}
+            {put_passed}
+            {put_total_wa}
             try leetWrite(alloc, .{{ .object = o }});
             return;
         }}
     }}
-    var o = std.json.ObjectMap.init(alloc);
-    try o.put("verdict", .{{ .string = "AC" }});
-    try o.put("passed", .{{ .integer = total }});
-    try o.put("total", .{{ .integer = total }});
+    {map_new}
+    {put_verdict_ac}
+    {put_passed_ac}
+    {put_total_ac}
     try leetWrite(alloc, .{{ .object = o }});
 }}
 '''
