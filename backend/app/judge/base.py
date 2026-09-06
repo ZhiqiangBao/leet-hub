@@ -39,6 +39,9 @@ class LanguageAdapter(ABC):
             return "compiler_missing"
         return None
 
+    def runtime_version(self) -> str | None:
+        return None
+
     @abstractmethod
     def wrap(self, user_code: str, signature: dict) -> str:
         raise NotImplementedError

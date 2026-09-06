@@ -3,10 +3,12 @@ from __future__ import annotations
 from ..base import LanguageAdapter
 from .c11 import C11Adapter
 from .cpp17 import Cpp17Adapter
+from .go import GoAdapter
 from .javascript import JavascriptAdapter
 from .python3 import Python3Adapter
-from .stubs import GoAdapter, RustAdapter, ZigAdapter
+from .rust import RustAdapter
 from .typescript import TypescriptAdapter
+from .zig import ZigAdapter
 
 ADAPTERS: dict[str, LanguageAdapter] = {
     adapter.id: adapter
@@ -37,6 +39,7 @@ def language_status() -> list[dict]:
                 "implemented": adapter.implemented,
                 "available": adapter.available(),
                 "runtime_detected": adapter.detect(),
+                "runtime_version": adapter.runtime_version(),
                 "reason": adapter.reason(),
             }
         )

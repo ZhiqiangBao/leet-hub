@@ -7,8 +7,8 @@
 3. `run_limited(run_argv(workdir), stdin=tests.jsonl, …)` → 解析 stdout 最后一行 JSON
 
 基类：[`backend/app/judge/base.py`](../backend/app/judge/base.py)。  
-已实现：[`python3.py`](../backend/app/judge/languages/python3.py)、[`c11.py`](../backend/app/judge/languages/c11.py)、[`cpp17.py`](../backend/app/judge/languages/cpp17.py)、[`javascript.py`](../backend/app/judge/languages/javascript.py)、[`typescript.py`](../backend/app/judge/languages/typescript.py)。  
-桩：[`stubs.py`](../backend/app/judge/languages/stubs.py)（`go` / `rust` / `zig`）。
+已实现：[`python3.py`](../backend/app/judge/languages/python3.py)、[`c11.py`](../backend/app/judge/languages/c11.py)、[`cpp17.py`](../backend/app/judge/languages/cpp17.py)、[`javascript.py`](../backend/app/judge/languages/javascript.py)、[`typescript.py`](../backend/app/judge/languages/typescript.py)、[`go.py`](../backend/app/judge/languages/go.py)、[`rust.py`](../backend/app/judge/languages/rust.py)、[`zig.py`](../backend/app/judge/languages/zig.py)。  
+Zig 驱动按主机 `zig version` 选 0.14 / 0.15 / 0.16 的 IO 与 ArrayList。Go / Rust 按 `go version` / `rustc --version` 写 `go.mod` 与 `--edition`。
 
 工具链装在评测主机；适配器代码进 Git 后由主机拉取。见 [server.md](server.md)。题目格式见 [problems.md](problems.md)。
 

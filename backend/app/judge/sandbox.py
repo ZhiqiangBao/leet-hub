@@ -86,6 +86,7 @@ def run_limited(
     time_ms: int,
     memory_mb: int,
     for_compile: bool = False,
+    extra_env: dict[str, str] | None = None,
 ) -> RunResult:
     wall = time_ms / 1000.0 + 1.0
     cmd = wrap_linux(argv, time_ms, memory_mb, for_compile=for_compile)
@@ -96,6 +97,8 @@ def run_limited(
         "PYTHONIOENCODING": "utf-8",
         "PYTHONUNBUFFERED": "1",
     }
+    if extra_env:
+        env.update(extra_env)
     start = time.perf_counter()
     try:
         proc = subprocess.Popen(

@@ -32,9 +32,9 @@
 
 | | 语言 | 状态 |
 | :--- | :--- | :--- |
-| ● | Python 3 · C · C++20 | **可评测**（主机上的 `/usr/bin/python3`、`gcc`、`g++`） |
-| ● | JavaScript · TypeScript | **可评测**（主机 `node`；TypeScript 另需全局 `tsc`：`sudo npm install -g typescript`） |
-| ○ | Go · Rust · Zig | 空模板已有，适配器仍是桩，下拉框灰色，提交为 `NA` |
+| ● | Python 3 · C · C++20 | **可评测**（主机 `/usr/bin/python3`、`gcc`、`g++`） |
+| ● | JavaScript · TypeScript | **可评测**（主机 `node`；TypeScript 另需 `sudo npm install -g typescript`） |
+| ● | Go · Rust · Zig | **可评测**（26.04：`sudo apt install golang-go rustc zig`。已核对 `go1.26.0`、`rustc 1.93.1`、`zig 0.14.1`） |
 
 题面支持 `$…$` 公式（KaTeX）。测试只跑公开示例、不计分；提交跑全部隐藏测例、进该语言耗时榜。
 
@@ -54,6 +54,7 @@ IP 用评测机上的 `hostname -I`。必须带端口。答题端不装 Python /
 | [服务端](docs/server.md) | Ubuntu 部署、systemd、从 GitHub 更新、协同 |
 | [客户端](docs/client.md) | 注册、做题、测试 / 提交、网页管理 |
 | [接入语言](docs/languages.md) | 主机装工具链 + 仓库改代码 |
+| [评测机工具链](docs/toolchains.md) | Ubuntu 26.04 版本要求；更低版本装不上或 Zig 不是 0.14 时怎么处理 |
 | [语言适配器](docs/adapters.md) | `LanguageAdapter`、驱动协议、JS / TS / Go / Rust / Zig |
 | [规划](docs/roadmap.md) | 加题、其余语言真正可评测 |
 
@@ -72,7 +73,15 @@ chmod +x scripts/setup-ubuntu.sh scripts/run-ubuntu.sh scripts/update-from-githu
 ./scripts/setup-ubuntu.sh
 ```
 
-服务名 `local-leet`，端口 **8080**。细节在 [server.md](docs/server.md)。代码推上 GitHub 之后，主机只跑：
+服务名 `local-leet`，端口 **8080**。细节在 [server.md](docs/server.md)。评测机按 **Ubuntu 26.04** 来：`python3` / `gcc` / `g++` / `nodejs` 之外，Go · Rust · Zig 用
+
+```bash
+sudo apt install golang-go rustc zig
+```
+
+已核对：`go1.26.0`、`rustc 1.93.1`、`zig 0.14.1`。评测会读主机上的编译器版本再选驱动（Zig 0.14 / 0.15 / 0.16）。装不上、路径不对或版本过旧，见 **[评测机工具链](docs/toolchains.md)**。
+
+代码推上 GitHub 之后，主机只跑：
 
 ```bash
 ./scripts/update-from-github.sh

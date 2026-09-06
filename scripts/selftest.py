@@ -164,6 +164,114 @@ class Solution {
     else:
         print("[SKIP] c not available here; Ubuntu host with gcc will run C judging")
 
+    AC_GO = """
+package main
+
+type Solution struct{}
+
+func (sol *Solution) TwoSum(nums []int, target int) []int {
+    seen := map[int]int{}
+    for i, n := range nums {
+        if j, ok := seen[target-n]; ok {
+            return []int{j, i}
+        }
+        seen[n] = i
+    }
+    return nil
+}
+"""
+    WA_GO = """
+package main
+
+type Solution struct{}
+
+func (sol *Solution) TwoSum(nums []int, target int) []int {
+    return []int{0, 0}
+}
+"""
+    AC_RS = """
+use std::collections::HashMap;
+pub struct Solution;
+impl Solution {
+    pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
+        let mut seen = HashMap::new();
+        for (i, n) in nums.into_iter().enumerate() {
+            if let Some(&j) = seen.get(&(target - n)) {
+                return vec![j, i as i32];
+            }
+            seen.insert(n, i as i32);
+        }
+        vec![]
+    }
+}
+"""
+    WA_RS = """
+pub struct Solution;
+impl Solution {
+    pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
+        let _ = (nums, target);
+        vec![0, 0]
+    }
+}
+"""
+    AC_ZIG = """
+const Solution = struct {
+    pub fn twoSum(self: @This(), nums: []const i32, target: i32) []i32 {
+        _ = self;
+        var i: usize = 0;
+        while (i < nums.len) : (i += 1) {
+            var j: usize = i + 1;
+            while (j < nums.len) : (j += 1) {
+                if (nums[i] + nums[j] == target) {
+                    var out = std.heap.page_allocator.alloc(i32, 2) catch unreachable;
+                    out[0] = @intCast(i);
+                    out[1] = @intCast(j);
+                    return out;
+                }
+            }
+        }
+        return &.{};
+    }
+};
+"""
+    WA_ZIG = """
+const Solution = struct {
+    pub fn twoSum(self: @This(), nums: []const i32, target: i32) []i32 {
+        _ = self;
+        _ = nums;
+        _ = target;
+        var out = std.heap.page_allocator.alloc(i32, 2) catch unreachable;
+        out[0] = 0;
+        out[1] = 0;
+        return out;
+    }
+};
+"""
+    go = next(x for x in language_status() if x["id"] == "go")
+    if go["available"]:
+        expect("go AC", judge_source("two-sum", "go", AC_GO), "AC")
+        expect("go WA", judge_source("two-sum", "go", WA_GO), "WA")
+        expect("go CE", judge_source("two-sum", "go", "package main\nfunc ("), "CE")
+    else:
+        print("[SKIP] go not available here; Ubuntu host with golang-go will run Go judging")
+
+    rs = next(x for x in language_status() if x["id"] == "rust")
+    if rs["available"]:
+        expect("rust AC", judge_source("two-sum", "rust", AC_RS), "AC")
+        expect("rust WA", judge_source("two-sum", "rust", WA_RS), "WA")
+        expect("rust CE", judge_source("two-sum", "rust", "pub struct Solution"), "CE")
+    else:
+        print("[SKIP] rust not available here; Ubuntu host with rustc will run Rust judging")
+
+    zg = next(x for x in language_status() if x["id"] == "zig")
+    if zg["available"]:
+        expect("zig AC", judge_source("two-sum", "zig", AC_ZIG), "AC")
+        expect("zig WA", judge_source("two-sum", "zig", WA_ZIG), "WA")
+        expect("zig CE", judge_source("two-sum", "zig", "const Solution = struct {"), "CE")
+    else:
+        print("[SKIP] zig not available here; Ubuntu 26.04 host with zig 0.14 will run Zig judging")
+
+
     print("selftest passed")
 
 

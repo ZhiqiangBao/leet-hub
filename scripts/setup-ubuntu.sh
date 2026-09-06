@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Install Local Leet on the Ubuntu judge host.
-# Judging uses this machine's system python3, gcc, g++, node, and tsc.
+# Judging uses this machine's system python3, gcc, g++, node, tsc, go, rustc, and zig.
 
 if [[ "$(uname -s)" != "Linux" ]]; then
   echo "This setup script is for the Ubuntu server, not the development PC."
@@ -17,7 +17,7 @@ UNIT="/etc/systemd/system/local-leet.service"
 
 export DEBIAN_FRONTEND=noninteractive
 sudo apt-get update
-sudo apt-get install -y python3 python3-venv python3-pip g++ gcc nodejs npm
+sudo apt-get install -y python3 python3-venv python3-pip g++ gcc nodejs npm golang-go rustc zig
 
 cd "$ROOT"
 python3 -m venv .venv
