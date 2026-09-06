@@ -1,0 +1,8 @@
+slug: next-greater-distance
+title: 下一个更大元素的最远跳距
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - array
+  - stack

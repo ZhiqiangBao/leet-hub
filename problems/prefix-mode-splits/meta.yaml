@@ -1,0 +1,8 @@
+slug: prefix-mode-splits
+title: 左右众数不同的分割点
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - array
+  - hash

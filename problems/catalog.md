@@ -10,7 +10,9 @@
 | k-spaced-max-sum | 间距不小于 K 的子集最大和 | dp, sorting, binary-search | `maximumSum(a: List[int], k: int) -> int` |
 | longest-common-prefix | 最长公共前缀 | string | `longestCommonPrefix(strs: List[str]) -> str` |
 | min-groups-bounded-diff | 双约束最少分组 | greedy, sorting | `minGroups(nums: List[int], d: int, m: int) -> int` |
+| next-greater-distance | 下一个更大元素的最远跳距 | array, stack | `maxNextGreaterDistance(nums: List[int]) -> int` |
 | pair-sum-in-range | 范围内元素对之和的个数 | array, two-pointers, sorting | `countPairsInRange(nums: List[int], lo: int, hi: int) -> int` |
+| prefix-mode-splits | 左右众数不同的分割点 | array, hash | `countModeDifferingSplits(nums: List[int]) -> int` |
 | tile-a-floor | 铺砖方案数 | dp, math | `tileFloor(n: int, a: int, b: int, c: int) -> int` |
 | two-sum | 两数之和 | array, hash | `twoSum(nums: List[int], target: int) -> List[int]` |
 | valid-parentheses | 有效的括号 | stack, string | `isValid(s: str) -> bool` |
