@@ -1,6 +1,6 @@
 # R3 · 测试用例
 
-**读的人**：`proof`（`tests` 读 `.qwen/skills/gen-tests/SKILL.md`）。
+**读的人**：主编调 `mcp__leet__check_tests`（`tests` 读本规则口径；构造手法写在 `.qwen/agents/tests.md`）。
 
 `n` 的含义见 R1（规模 = 长度或要展开的个数，**不是** `nums[i]`）。
 
@@ -23,7 +23,7 @@
 - 重复值（题意涉及时）
 - 解在开头、中间、结尾
 - 常见错解：只看相邻、漏负数、错误双指针
-- 1～2 条顶满**题面声明的** `n` 上限（不必是 `10^5`；被值域锁死则顶该锁死值）。题面长度上限 ≥ 5000 时，其余隐藏大致：3～4 条最小/临界 `n`（可 `<100`）；剩下的 `n` 为 `100`～`5000`。`check.py` 的 `hidden_n.other` 含「顶满但不是 10^5」的条，不要据此报缺大规模。
+- 1～2 条顶满 **meta.yaml 的 `n_max`**（不必是 `10^5`）。长度上限 ≥ 5000 时，其余隐藏大致：3～4 条最小/临界 `n`（可 `<100`）；剩下的 `n` 为 `100`～`5000`。`dump` / `mcp__leet__check_tests` 把 `lt100`/`missing_at_max`/`n_max_ne_U`/`out_of_bounds` 算进 `ok`，不要让模型看直方图。
 - 题面 `n` 上限本身为十几：全部测例的 `n` ≤ 该上限，其中 1～2 条取上限
 - 单个整数参数为 `10^9`：测该值，不生成长度为 `10^9` 的数组
 - 布尔真与假；允许空结果则含空结果
@@ -35,14 +35,14 @@
 1. 不越题面约束。
 2. 公开行即示例；隐藏行不复制示例。
 3. 多种合法输出不用 `compare: exact`；下标集合用 `any_order`。
-4. `expected` 由 `dump()` 调用磁盘上的 `solve` 填写。`tests` 模型只造 `args`，不读参考解、不手算大样例。改约束后重跑 gen.py。
+4. `expected` 由 `dump()` 调用磁盘上的 `solve` 填写。`tests` 模型只造 `args`，不读参考解、不手算大样例。改约束后重写 gen.py 再调 `mcp__leet__run_gen`。
 5. JSONL：UTF-8，一行一个对象，`args` 为数组，`hidden` 为布尔。
 6. 整数按签名通道（R4）：**默认 int32**。`int` / `List[int]` 落 int32；仅 `long` / `List[long]` 可到 int64。不要把 int 题的答案做成超 int32。字符串不含 `\0`。
 7. 一行一个考察点。jsonl 无注释。
 
 ## 模型输出（只落盘、只回报摘要）
 
-`tests` 不准把 `tests.jsonl` 读进或写进对话，不准 `python -c` 内联数组，不准把 jsonl 打到 stdout 再「自检」。只写短 `gen.py`，`dump()` 打印一行指标。构造手法与上下文经济见 `.qwen/skills/gen-tests/SKILL.md`。
+`tests` 不准把 `tests.jsonl` 读进对话。只写短 `gen.py`，调 `mcp__leet__run_gen` 看一行指标。
 
 ## 格式
 

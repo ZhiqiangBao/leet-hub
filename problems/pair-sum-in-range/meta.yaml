@@ -7,3 +7,7 @@ tags:
   - array
   - two-pointers
   - sorting
+n_min: 2
+n_max: 100000
+elem_min: -100000000
+elem_max: 100000000

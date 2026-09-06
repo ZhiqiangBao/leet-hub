@@ -5,3 +5,7 @@ time_limit_ms: 2000
 memory_limit_mb: 256
 tags:
   - string
+n_min: 1
+n_max: 200
+elem_min: -1000000000
+elem_max: 1000000000

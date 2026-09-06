@@ -4,3 +4,11 @@ difficulty: hard
 tags: [dp, math]
 time_limit_ms: 2000
 memory_limit_mb: 256
+n_min: 1
+n_max: 1000000000
+elem_min: 1
+elem_max: 1000000000
+param_bounds:
+  d:
+    min: 0
+    max: 9

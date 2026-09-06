@@ -12,7 +12,30 @@
 		},
 		"allowedGrades": ["small"]
 	},
+	"mcpServers": {
+		"leet": {
+			"command": "python",
+			"args": [".qwen/mcp/server.py"],
+			"cwd": ".",
+			"env": {
+				"PYTHONUNBUFFERED": "1"
+			},
+			"timeout": 600000,
+			"trust": true,
+			"includeTools": [
+				"fix_format",
+				"statement_check",
+				"clone_check",
+				"check_tests",
+				"run_gen",
+				"fill_expected",
+				"write_catalog",
+				"drop_problem"
+			]
+		}
+	},
 	"mcp": {
+		"allowed": ["leet"],
 		"excluded": ["godot-ai", "blender"]
 	},
 	"permissions": {

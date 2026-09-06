@@ -7,3 +7,11 @@ tags:
   - dp
   - sorting
   - binary-search
+n_min: 1
+n_max: 10000
+elem_min: 1
+elem_max: 10000
+param_bounds:
+  k:
+    min: 1
+    max: 10000

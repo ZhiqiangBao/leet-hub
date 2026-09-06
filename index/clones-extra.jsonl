@@ -1,0 +1,11 @@
+{"src":"gfg","id":"","title_cn":"组合数取模","title_en":"nCr mod prime binomial coefficient modulo","slug":"ncr-mod-prime","tags":["math","combinatorics"]}
+{"src":"gfg","id":"","title_cn":"错排","title_en":"count derangements","slug":"count-derangements","tags":["math","dp"]}
+{"src":"gfg","id":"","title_cn":"子串贡献和","title_en":"sum of all substrings of a number contribution","slug":"sum-of-all-substrings","tags":["math","string"]}
+{"src":"gfg","id":"","title_cn":"最大子数组和","title_en":"kadane maximum subarray sum","slug":"kadane","tags":["array","dp"]}
+{"src":"gfg","id":"","title_cn":"最短子数组 gcd 为 1","title_en":"smallest subarray with gcd 1","slug":"smallest-subarray-gcd-1","tags":["math","array"]}
+{"src":"gfg","id":"","title_cn":"极差不超过 k 的窗口","title_en":"longest subarray max min difference at most k","slug":"longest-subarray-max-min-k","tags":["sliding-window"]}
+{"src":"gfg","id":"","title_cn":"括号最少翻转","title_en":"minimum reversals to make parentheses valid","slug":"min-reversals-parentheses","tags":["stack","string"]}
+{"src":"gfg","id":"","title_cn":"股票跨度","title_en":"stock span problem","slug":"stock-span","tags":["stack"]}
+{"src":"gfg","id":"","title_cn":"岛屿数量","title_en":"number of islands","slug":"number-of-islands","tags":["array"]}
+{"src":"gfg","id":"","title_cn":"买卖股票","title_en":"best time to buy and sell stock","slug":"buy-sell-stock","tags":["array"]}
+{"src":"gfg","id":"","title_cn":"爬楼梯","title_en":"climbing stairs","slug":"climbing-stairs","tags":["dp"]}

@@ -6,3 +6,14 @@ memory_limit_mb: 256
 tags:
   - greedy
   - sorting
+n_min: 1
+n_max: 100000
+elem_min: 0
+elem_max: 1000000000
+param_bounds:
+  d:
+    min: 0
+    max: 1000000000
+  m:
+    min: 1
+    max: 100000

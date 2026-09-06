@@ -8,7 +8,7 @@
 
 1. 选定 `slug`：只含小写字母、数字和连字符，例如 `two-sum`。目录名必须等于 slug。
 2. 创建目录 `problems/<slug>/`，写入下表所列文件。
-3. 提交并推送仓库。
+3. 提交并推送仓库。主编在 commit 前调 `mcp__leet__write_catalog`（或人跑 `python .qwen/tools/write_catalog.py --root <ROOT> --slug <slug>`），把 `problems/catalog.md` 一并提交。换题：主编调 `mcp__leet__drop_problem` 删该 slug 目录与 tmp 脚本，不要把废稿 `git add`。已进题表的题删完再重生 catalog。
 4. 评测主机进入克隆目录后执行 `./scripts/update-from-github.sh`，或 `git pull` 后 `sudo systemctl restart local-leet`。管理员也可在网页「管理」中选择「从磁盘重新加载」。
 
 不要只改 Ubuntu 本地磁盘却不推送，同时也不要一边用网页「管理」写盘、一边用 Git 改同一题。
@@ -16,24 +16,27 @@
 ## 目录结构
 
 ```text
-problems/<slug>/
-  meta.yaml
-  statement.md
-  signature.yaml
-  tests.jsonl
-  starter/
-    python3.py
-    c.c
-    cpp17.cpp
-    javascript.js
-    typescript.ts
-    go.go
-    rust.rs
-    zig.zig
+problems/
+  catalog.md          # 已出题表；脚本生成，不要手改
+  <slug>/
+    meta.yaml
+    statement.md
+    signature.yaml
+    tests.jsonl
+    starter/
+      python3.py
+      c.c
+      cpp17.cpp
+      javascript.js
+      typescript.ts
+      go.go
+      rust.rs
+      zig.zig
 ```
 
 | 文件 | 必填 | 说明 |
 | --- | --- | --- |
+| `catalog.md` | 是（题库根） | 已出题表。由 `mcp__leet__write_catalog` 在 commit 前生成，不要手改 |
 | `meta.yaml` | 是 | 标题、难度、时限、内存、标签 |
 | `statement.md` | 是 | 题面（Markdown），显示在题目页左侧 |
 | `signature.yaml` | 是 | 类名、方法名、参数、返回类型、比较方式 |
@@ -61,6 +64,7 @@ tags:
 - `time_limit_ms`：用户程序运行时限（毫秒），建议 1000–5000。
 - `memory_limit_mb`：运行内存上限（MB）。编译阶段不使用此值。
 - `tags`：小写英文 id，1～3 个。题库页按知识点筛选；中文名在 `frontend/src/tags.ts`。
+- `n_min` / `n_max` / `elem_min` / `elem_max`：规模与元素值域。`dump`/`mcp__leet__check_tests` 读这些。缺了由 `mcp__leet__fix_format` 填默认（`1`、`100000`、`±10^9`）。
 
 ## statement.md
 
@@ -108,7 +112,7 @@ compare: any_order
 
 ## starter
 
-与力扣相同：只给出类/函数签名，函数体留空，不要写 `return {}`、`return false` 等占位返回值。由 `scripts/write-starters.py` 根据 `signature.yaml` 生成，不要手抄。Python 空缩进块是语法错误，提交空 starter 得到 `CE` 即可。
+与力扣相同：只给出类/函数签名，函数体留空，不要写 `return {}`、`return false` 等占位返回值。由 `mcp__leet__fix_format`（内部 `write_starters.py`）根据 `signature.yaml` 生成，不要手抄。Python 空缩进块是语法错误，提交空 starter 得到 `CE` 即可。
 
 不要在用户代码里定义 `main`，否则与驱动中的 `main` 冲突，结果为 `CE`。
 

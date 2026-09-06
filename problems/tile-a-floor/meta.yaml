@@ -6,3 +6,7 @@ memory_limit_mb: 256
 tags:
   - dp
   - math
+n_min: 1
+n_max: 1000000000
+elem_min: 0
+elem_max: 1000000000

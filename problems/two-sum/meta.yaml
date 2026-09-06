@@ -6,3 +6,7 @@ memory_limit_mb: 256
 tags:
   - array
   - hash
+n_min: 2
+n_max: 10000
+elem_min: -1000000000
+elem_max: 1000000000

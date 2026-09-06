@@ -4,3 +4,11 @@ difficulty: easy
 time_limit_ms: 1000
 memory_limit_mb: 256
 tags: [hash, string, sliding-window]
+n_min: 1
+n_max: 60000
+elem_min: 1
+elem_max: 100000
+param_bounds:
+  L:
+    min: 1
+    max: 100000

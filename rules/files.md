@@ -11,34 +11,37 @@ problems/<slug>/
   meta.yaml
   statement.md
   signature.yaml
-  starter/          # 不要手写；跑 scripts/write-starters.py
+  starter/          # 不要手写；调 mcp__leet__fix_format
 ```
 
-`tests.jsonl` 由 `tests` 写，`author` 不创建、不修改。starter 一律由脚本生成（含 JS / TS / Go / Rust / Zig），不要手写。
+不要创建或修改 `tests.jsonl`。starter 一律由 `mcp__leet__fix_format` 生成（含 JS / TS / Go / Rust / Zig），不要手写。
+
+`problems/catalog.md` 是已出题表（slug、标题、tags、签名）。对照此表即可。
 
 ## meta.yaml
 
 `slug`、`title`（中文）、`difficulty`、`time_limit_ms`（1000–5000，默认 2000）、`memory_limit_mb`（默认 256）、`tags`。
 
+规模与值域（`dump` / `mcp__leet__check_tests` 读这些，不解析题面 Markdown）。缺省：`n_min=1`、`n_max=100000`、`elem_min=-10^9`、`elem_max=10^9`。long 题把 `elem_max` 提到 int64，或加 `param_bounds`。
+
+```yaml
+n_min: 1
+n_max: 100000
+elem_min: -1000000000
+elem_max: 1000000000
+```
+
+## 示例改写
+
+排版由 `mcp__leet__fix_format` 改，模型不要背模板。写完调 `mcp__leet__fix_format`（参数 `slug`）。不要 `run_shell_command`。
+
+工具会拆掉示例三行外的代码围栏、统一全角冒号、值同行，并生成 starter、补上缺的 bounds 字段。
+
 ## statement.md
 
 首行必须是 `# <中文标题>`（与 `meta.yaml` 的 `title` 一致）。题意、参数、返回值、2～3 个示例、约束。不要要求从标准输入读入。不要把参考解或 `def solve` 写进题面。
 
-### 示例区排版（机检契约）
-
-`statement.py` 用 `输入[:：]\s*(.*?)\s*输出[:：]\s*([^\n]+)` 取期望值。排版不对时会报 `ref_example_mismatch`（看起来像 ref 算错，其实是期望值没被读到）。每个示例必须写成：
-
-**示例 1**
-
-```
-输入：s = "aabbccc", k = 2
-输出：2
-解释：……一行纯文本……
-```
-
-- `输入：` / `输出：` / `解释：` 各占一行，全角冒号，值紧跟冒号同一行；
-- 这三行不得包在 `**…**` 里，不得用反引号包裹值，不得把值单独放到下一行或代码围栏里；
-- 题面其他区域可用 LaTeX；只有示例代码围栏内要求纯文本。
+每个示例写出「输入 / 输出 / 解释」三行即可（半角冒号、围栏、反引号都可以，交给 `mcp__leet__fix_format`）。`mcp__leet__statement_check` 按改写后的 `输入：` / `输出：` 取期望值。
 
 ## signature.yaml
 
@@ -52,17 +55,11 @@ return_type: <类型>
 compare: exact   # 下标集合无序时用 any_order
 ```
 
-`params` 顺序与 `tests.jsonl` 的 `args` 一致。类型见 R4。默认 `int`；只有会超 int32 的字段才写成 `long`。
+`params` 顺序即函数参数顺序。类型见 R4。默认 `int`；只有会超 int32 的字段才写成 `long`。
 
 ## starter
 
-空函数体。禁止占位 `return`，禁止再写 `func main` / `int main`（Go 模板里的 `package main` 要保留）。**不要手写**：`signature.yaml` 落盘后执行
-
-```powershell
-python "scripts/write-starters.py" --slug <slug>
-```
-
-默认生成 Python / C / C++ 以及 JS / TS / Go / Rust / Zig。改签名后重跑。不要把生成结果贴进对话。
+空函数体。禁止占位 `return`，禁止再写 `func main` / `int main`（Go 模板里的 `package main` 要保留）。**不要手写**：由 `mcp__leet__fix_format` 生成。不要把生成结果贴进对话。
 
 生成形态如下（供对照，不是让你手抄）：
 

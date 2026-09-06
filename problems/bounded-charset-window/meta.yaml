@@ -7,3 +7,11 @@ tags:
   - sliding-window
   - hash
   - string
+n_min: 0
+n_max: 100000
+elem_min: 1
+elem_max: 100000
+param_bounds:
+  k:
+    min: 1
+    max: 100000

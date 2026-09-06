@@ -60,10 +60,12 @@ IP 用评测机上的 `hostname -I`。必须带端口。答题端不装 Python /
 | [语言适配器](docs/adapters.md) | `LanguageAdapter`、驱动协议、JS / TS / Go / Rust / Zig |
 | [规划](docs/roadmap.md) | 加题、其余语言真正可评测 |
 
-出题流水线见 [`QWEN.md`](QWEN.md)。starter 不要手写，签名落盘后：
+出题流水线见 [`QWEN.md`](QWEN.md)。Qwen 调项目 MCP `leet`（工具名 `mcp__leet__fix_format` 等）。人在终端补 starter / 题表：
 
 ```powershell
-python scripts/write-starters.py --slug <slug>
+python .qwen/tools/write_starters.py --slug <slug>
+python .qwen/tools/write_catalog.py --root <ROOT> --slug <slug>
+python .qwen/tools/drop_problem.py --root <ROOT> --slug <slug>
 ```
 
 ## 评测主机：装起来
