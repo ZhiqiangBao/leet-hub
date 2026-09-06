@@ -134,8 +134,8 @@ def emit_zig_converters(types: list[str], flavor: str = "14") -> str:
             inner_from = call_from(inner, "item")
             inner_to = call_to(inner, "item")
             if flavor == "16":
-                arr_init = "    var arr: std.ArrayList(std.json.Value) = .empty;"
-                arr_append = f"        try arr.append(alloc, {inner_to});"
+                arr_init = "    var arr = std.json.Array.init(alloc);"
+                arr_append = f"        try arr.append({inner_to});"
             else:
                 arr_init = "    var arr = std.ArrayList(std.json.Value).init(alloc);"
                 arr_append = f"        try arr.append({inner_to});"
@@ -175,13 +175,19 @@ def zig_runtime_bits(flavor: str) -> dict[str, str]:
             "tests_new": "    var tests: std.ArrayList([]const u8) = .empty;",
             "tests_append": "        try tests.append(alloc, line);",
             "stdin": (
+                "    var threaded = std.Io.Threaded.init(alloc, .{});\n"
+                "    defer threaded.deinit();\n"
+                "    const io = threaded.io();\n"
                 "    var in_buf: [4096]u8 = undefined;\n"
-                "    var stdin_reader = std.fs.File.stdin().reader(&in_buf);\n"
+                "    var stdin_reader = std.Io.File.stdin().readerStreaming(io, &in_buf);\n"
                 "    const data = try stdin_reader.interface.allocRemaining(alloc, .limited(32 * 1024 * 1024));"
             ),
             "stdout": (
+                "    var threaded = std.Io.Threaded.init(alloc, .{});\n"
+                "    defer threaded.deinit();\n"
+                "    const io = threaded.io();\n"
                 "    var out_buf: [256]u8 = undefined;\n"
-                "    var stdout_writer = std.fs.File.stdout().writer(&out_buf);\n"
+                "    var stdout_writer = std.Io.File.stdout().writerStreaming(io, &out_buf);\n"
                 "    try stdout_writer.interface.writeAll(s);\n"
                 '    try stdout_writer.interface.writeAll("\\n");\n'
                 "    try stdout_writer.interface.flush();"
