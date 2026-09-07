@@ -35,7 +35,7 @@ disallowedTools:
 
 ## 开工读盘（各一次）
 
-路径一律用派工给出的项目根绝对路径拼接。
+把派工里的项目根与相对路径用正斜杠 `/` 拼成绝对路径（Windows 也如此）。禁止反斜杠：`\b` 是退格。
 
 1. 返工则读 `desk/校对/<slug>.md`
 2. `problems/<slug>/statement.md`、`signature.yaml`、`meta.yaml`

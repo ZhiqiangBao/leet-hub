@@ -27,8 +27,8 @@ disallowedTools:
 ## 开工读盘（各一次）
 
 1. `read_file` `problems/catalog.md`。对照标题与 `signature` 列，不要出同一题核；同一类算法可以。
-2. 返工则读 `desk/质量/<slug>.md` 或 `desk/校对/<slug>.md` 与现有 `problems/<slug>/` 题面三件套。新题则靠派工消息里的 slug／难度／标签／一句话题意。路径一律用派工给出的项目根绝对路径拼接。
-3. `read_file` `rules/bank.md`
+2. 返工则读 `desk/质量/<slug>.md` 或 `desk/校对/<slug>.md` 与现有 `problems/<slug>/` 题面三件套。新题则靠派工消息里的 slug／难度／标签／一句话题意。把派工里的项目根与相对路径用正斜杠 `/` 拼成绝对路径（Windows 也如此，例如 `{根}/rules/bank.md`）。禁止反斜杠：`rules\bank.md` 的 `\b` 是退格，会读成 File not found。
+3. `read_file` `{根}/rules/bank.md`
 4. `read_file` `rules/files.md`
 5. `read_file` `rules/judge.md`
 

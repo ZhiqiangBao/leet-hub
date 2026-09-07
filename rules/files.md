@@ -40,7 +40,7 @@ param_bounds:
 
 排版由 `mcp__leet__fix_format` 改，模型不要背模板。写完调 `mcp__leet__fix_format`（参数 `slug`）。不要 `run_shell_command`。
 
-工具会把题面收成网页同一套结构：`## 题目描述` / `## 题意` 只去掉标题、保留正文；整节删掉「参数 / 返回值 / 输入格式」等多余小节；示例编号为 `### 示例 N`；拆掉示例三行外的代码围栏、统一全角冒号与硬换行、值同行，把 `nums = [1,3,2,4], hi = 5` 改成位置参数 `[1, 3, 2, 4], 5`，并生成 starter、补上缺的 bounds 字段。返回 JSON 含 `examples.edits`（第几条、input/layout、是否 kv_to_positional）与 `bounds_notes`。改写后的题面形如：
+工具会把题面收成网页同一套结构：`## 题目描述` / `## 题意` 只去掉标题、保留正文；整节删掉「参数 / 返回值 / 输入格式」等多余小节；示例编号为 `### 示例 N`；拆掉包住整段示例或单独包住输入/输出值的代码围栏、统一全角冒号与硬换行、值同行，把 `nums = [1,3,2,4], hi = 5` 改成位置参数 `[1, 3, 2, 4], 5`，并生成 starter、补上缺的 bounds 字段。返回 JSON 含 `examples.edits`（第几条、input/layout、是否 kv_to_positional）与 `bounds_notes`。改写后的题面形如：
 
 ```text
 # 中文标题

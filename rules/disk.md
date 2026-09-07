@@ -23,7 +23,7 @@
 
 ## 写盘（Windows）
 
-中文用 `write_file`（UTF-8）。只改任务 slug。
+中文用 `write_file`（UTF-8）。只改任务 slug。路径一律正斜杠 `/` 拼接（`{根}/rules/bank.md`）；不要反斜杠，`rules\bank.md` 的 `\b` 是退格。
 
 ## git（主编）
 

@@ -7,10 +7,107 @@ from pathlib import Path
 
 _INPUT_RE = re.compile(r"输入[:：]\s*(.*?)\s*输出[:：]\s*([^\n]+)", flags=re.S)
 _NAME_EQ = re.compile(r"^([A-Za-z_]\w*)\s*=\s*(.*)$")
+_IO_LINE = re.compile(r"^(\*\*)?(输入|输出)[:：](\*\*)?\s*(.*?)\s*$")
+_FENCE_LANGS = (
+    "json",
+    "javascript",
+    "js",
+    "python",
+    "py",
+    "text",
+    "txt",
+    "html",
+    "xml",
+    "c",
+    "cpp",
+    "java",
+)
+_FENCE_LANG = re.compile(
+    r"^(?:" + "|".join(_FENCE_LANGS) + r")\s+",
+    re.I,
+)
+_FENCE_LANG_TOKEN = re.compile(
+    r"^(?:" + "|".join(_FENCE_LANGS) + r")$",
+    re.I,
+)
+
+
+def _compact_value(text: str) -> str:
+    return re.sub(r"\s+", " ", (text or "").strip())
+
+
+def _inner_from_inline_fence(rest: str) -> str | None:
+    if not rest.startswith("```"):
+        return None
+    body = rest[3:]
+    if "```" not in body:
+        return None
+    inner, _tail = body.rsplit("```", 1)
+    inner = inner.strip()
+    m = re.match(r"^([A-Za-z][\w+-]*)(?:\s+([\s\S]+))?$", inner)
+    rest = (m.group(2) or "").strip() if m else ""
+    if rest and m and _FENCE_LANG_TOKEN.match(m.group(1)):
+        inner = rest
+    return _compact_value(inner)
+
+
+def unwrap_value_fences(text: str) -> str:
+    """Hoist ``` fences that wrap only 输入/输出 values onto the label line."""
+    lines = (text or "").replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+
+    def consume_fence(start: int, open_rest: str) -> tuple[str, int]:
+        parts: list[str] = []
+        extra = open_rest.strip()
+        if extra and not _FENCE_LANG_TOKEN.match(extra):
+            parts.append(extra)
+        j = start
+        while j < n:
+            stripped = lines[j].strip()
+            if stripped.startswith("```"):
+                return _compact_value("\n".join(parts)), j + 1
+            parts.append(lines[j])
+            j += 1
+        return _compact_value("\n".join(parts)), j
+
+    while i < n:
+        m = _IO_LINE.match(lines[i].strip())
+        if not m:
+            out.append(lines[i])
+            i += 1
+            continue
+        kind = m.group(2)
+        rest = (m.group(4) or "").strip()
+        inline = _inner_from_inline_fence(rest)
+        if inline is not None:
+            out.append(f"{kind}：{inline}" if inline else f"{kind}：")
+            i += 1
+            continue
+        if rest.startswith("```"):
+            inner, nxt = consume_fence(i + 1, rest[3:])
+            out.append(f"{kind}：{inner}" if inner else f"{kind}：")
+            i = nxt
+            continue
+        if rest == "":
+            j = i + 1
+            while j < n and lines[j].strip() == "":
+                j += 1
+            if j < n and lines[j].strip().startswith("```"):
+                inner, nxt = consume_fence(j + 1, lines[j].strip()[3:])
+                out.append(f"{kind}：{inner}" if inner else f"{kind}：")
+                i = nxt
+                continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
 
 
 def coerce_expected(text: str):
-    s = text.strip().strip("`").rstrip("。.")
+    s = (text or "").strip().replace("```", " ")
+    s = _FENCE_LANG.sub("", s.strip())
+    s = s.strip().strip("`").rstrip("。.")
     if s in ("true", "True"):
         return True
     if s in ("false", "False"):
@@ -214,6 +311,7 @@ def parse_statement_examples(
     text: str, params: list[tuple[str, str]]
 ) -> tuple[list[tuple[list, object]], list[str], int]:
     """Return bound rows, bind issues, and 输入 count."""
+    text = unwrap_value_fences(text)
     rows: list[tuple[list, object]] = []
     issues: list[str] = []
     matches = _INPUT_RE.findall(text)

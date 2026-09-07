@@ -26,7 +26,7 @@ disallowedTools:
 
 ## 开工读盘（各一次）
 
-路径一律用派工给出的项目根绝对路径拼接，禁止猜测其它盘符或旧仓库路径。
+把派工里的项目根与相对路径用正斜杠 `/` 拼成绝对路径（Windows 也如此）。禁止反斜杠：`\b` 是退格。禁止猜测其它盘符或旧仓库路径。
 
 1. `<ROOT>/problems/<slug>/statement.md`、`signature.yaml`
 2. `<ROOT>/rules/judge.md`（类型；默认 int32，少数字段才 `long`）

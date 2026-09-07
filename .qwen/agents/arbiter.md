@@ -25,6 +25,8 @@ disallowedTools:
 
 ## 开工
 
+把派工里的项目根与相对路径用正斜杠 `/` 拼成绝对路径。禁止反斜杠：`\b` 是退格。
+
 1. `problems/<slug>/statement.md`、`signature.yaml`
 2. `.qwen/tmp/<slug>_ref.py`、`.qwen/tmp/<slug>_solve2.py`
 3. `desk/校对/<slug>.md`

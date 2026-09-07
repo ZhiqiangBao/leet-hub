@@ -10,7 +10,7 @@ import sys
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 from constraints import load_params  # noqa: E402
-from examples import rewrite_inputs_positional  # noqa: E402
+from examples import rewrite_inputs_positional, unwrap_value_fences  # noqa: E402
 from utf8io import dump  # noqa: E402
 import re
 
@@ -134,6 +134,7 @@ def normalize_layout(text: str) -> str:
     """Canonical statement shape for the web page. Keeps `# title` (R2)."""
     body = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     body = _unwrap_example_fences(body)
+    body = unwrap_value_fences(body)
     body = _fullwidth_label_colons(body)
     body = _split_joined_labels(body)
     body = _alias_headings(body)

@@ -23,6 +23,83 @@ function unwrapExampleFences(text: string): string {
   });
 }
 
+const IO_LINE = /^(\*\*)?(输入|输出)[:：](\*\*)?\s*(.*?)\s*$/;
+const FENCE_LANG_TOKEN =
+  /^(?:json|javascript|js|python|py|text|txt|html|xml|c|cpp|java)$/i;
+
+function compactValue(text: string): string {
+  return text.trim().replace(/\s+/g, " ");
+}
+
+function innerFromInlineFence(rest: string): string | null {
+  if (!rest.startsWith("```")) return null;
+  const body = rest.slice(3);
+  const close = body.lastIndexOf("```");
+  if (close < 0) return null;
+  let inner = body.slice(0, close).trim();
+  const lang = inner.match(/^([A-Za-z][\w+-]*)(?:\s+([\s\S]+))?$/);
+  const rest = (lang?.[2] || "").trim();
+  if (rest && lang && FENCE_LANG_TOKEN.test(lang[1])) inner = rest;
+  return compactValue(inner);
+}
+
+function unwrapValueFences(text: string): string {
+  const lines = text.split("\n");
+  const out: string[] = [];
+  let i = 0;
+
+  const consumeFence = (start: number, openRest: string): [string, number] => {
+    const parts: string[] = [];
+    const extra = openRest.trim();
+    if (extra && !FENCE_LANG_TOKEN.test(extra)) parts.push(extra);
+    let j = start;
+    while (j < lines.length) {
+      if (lines[j].trim().startsWith("```")) {
+        return [compactValue(parts.join("\n")), j + 1];
+      }
+      parts.push(lines[j]);
+      j += 1;
+    }
+    return [compactValue(parts.join("\n")), j];
+  };
+
+  while (i < lines.length) {
+    const m = lines[i].trim().match(IO_LINE);
+    if (!m) {
+      out.push(lines[i]);
+      i += 1;
+      continue;
+    }
+    const kind = m[2];
+    const rest = (m[4] || "").trim();
+    const inline = innerFromInlineFence(rest);
+    if (inline !== null) {
+      out.push(inline ? `${kind}：${inline}` : `${kind}：`);
+      i += 1;
+      continue;
+    }
+    if (rest.startsWith("```")) {
+      const [inner, nxt] = consumeFence(i + 1, rest.slice(3));
+      out.push(inner ? `${kind}：${inner}` : `${kind}：`);
+      i = nxt;
+      continue;
+    }
+    if (rest === "") {
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() === "") j += 1;
+      if (j < lines.length && lines[j].trim().startsWith("```")) {
+        const [inner, nxt] = consumeFence(j + 1, lines[j].trim().slice(3));
+        out.push(inner ? `${kind}：${inner}` : `${kind}：`);
+        i = nxt;
+        continue;
+      }
+    }
+    out.push(lines[i]);
+    i += 1;
+  }
+  return out.join("\n");
+}
+
 function fullwidthLabelColons(text: string): string {
   return text.replace(/^(\*\*)?(输入|输出|解释)[:：]/gm, "$1$2：");
 }
@@ -117,6 +194,7 @@ export function normalizeStatement(md: string): string {
   let body = (md || "").replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   body = body.replace(/^#\s+[^\n]+\n+/, "");
   body = unwrapExampleFences(body);
+  body = unwrapValueFences(body);
   body = fullwidthLabelColons(body);
   body = splitJoinedLabels(body);
   body = aliasHeadings(body);

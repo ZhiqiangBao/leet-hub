@@ -80,7 +80,7 @@
 
 ## 派工
 
-任务里写：**项目根绝对路径**、`slug`、难度、标签、一句话题意、**答案上界（数字）**。指定 `subagent_type`。不要 fork、不要 inherit。默认按 int32 出题；仅当上界会超 \(2^{31}-1\) 且要保留该规模时，派工写明对应字段 yaml `long`（不要每题都 long，不要写 `int64` / 「请用能容纳的整型」）。答案上界只给 author 定 `int`/`long`，不要把「通道」抄进题面；题面约束仍须写 `n` 与值域。给 `author` 加：写完调 `mcp__leet__fix_format`（不要手调题面结构与示例排版、不要手写 starter）；`meta.yaml` 写清 `n_min`/`n_max`/`elem_min`/`elem_max`（与约束一致；long 字段用嵌套 `param_bounds: {hi: {min, max}}` 或扁平 `hi_min`/`hi_max`，或把 `elem_max` 提到 int64）；示例输入用位置参数；解释只写哪些计入/不计入，不要写解法；回执必须带每条示例的逐项/逐窗口手算（不要贴完整数组）。`read_file` 不吃相对路径；所有子代理用派工里的绝对路径拼接，禁止猜盘符或旧项目路径。
+任务里写：**项目根绝对路径**、`slug`、难度、标签、一句话题意、**答案上界（数字）**。指定 `subagent_type`。不要 fork、不要 inherit。默认按 int32 出题；仅当上界会超 \(2^{31}-1\) 且要保留该规模时，派工写明对应字段 yaml `long`（不要每题都 long，不要写 `int64` / 「请用能容纳的整型」）。答案上界只给 author 定 `int`/`long`，不要把「通道」抄进题面；题面约束仍须写 `n` 与值域。给 `author` 加：写完调 `mcp__leet__fix_format`（不要手调题面结构与示例排版、不要手写 starter）；`meta.yaml` 写清 `n_min`/`n_max`/`elem_min`/`elem_max`（与约束一致；long 字段用嵌套 `param_bounds: {hi: {min, max}}` 或扁平 `hi_min`/`hi_max`，或把 `elem_max` 提到 int64）；示例输入用位置参数；解释只写哪些计入/不计入，不要写解法；回执必须带每条示例的逐项/逐窗口手算（不要贴完整数组）。`read_file` 不吃相对路径。项目根写成正斜杠（`C:/Users/.../local-leet`），子代理用 `/` 拼接；禁止反斜杠（`rules\bank.md` 的 `\b` 是退格，读盘会 File not found）。禁止猜盘符或旧项目路径。
 
 `author` 返回后：**直接派 `quality`**。不要主编调 `mcp__leet__statement_check`、不要主编审题面。质量只看 `quality` 的结论。
 

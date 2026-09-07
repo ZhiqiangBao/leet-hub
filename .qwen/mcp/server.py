@@ -106,7 +106,7 @@ def _need_slug(slug: str) -> str | None:
 
 
 @mcp.tool(
-    description="Unify statement.md layout (headings, example fences, 输入/输出/解释 lines), rewrite kv examples to positional, fill missing meta bounds, generate empty starters. Returns ok, examples.changed, examples.edits, bounds_notes, issues. Does not judge 题意.",
+    description="Unify statement.md layout (headings, example/value fences, 输入/输出/解释 lines), rewrite kv examples to positional, fill missing meta bounds, generate empty starters. Returns ok, examples.changed, examples.edits, bounds_notes, issues. Does not judge 题意.",
     annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True),
     structured_output=False,
 )

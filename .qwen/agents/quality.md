@@ -28,7 +28,7 @@ disallowedTools:
 
 ## 开工
 
-路径一律用派工给出的项目根绝对路径拼接。
+把派工里的项目根与相对路径用正斜杠 `/` 拼成绝对路径（Windows 也如此，例如 `{根}/rules/bank.md`）。禁止反斜杠：`rules\bank.md` 的 `\b` 是退格，会读成 File not found。
 
 1. `problems/catalog.md`
 2. `problems/<slug>/signature.yaml`、`meta.yaml`
