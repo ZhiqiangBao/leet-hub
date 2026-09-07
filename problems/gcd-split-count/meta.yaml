@@ -1,0 +1,12 @@
+slug: gcd-split-count
+title: 等 gcd 分割计数
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - array
+  - math
+n_min: 2
+n_max: 100000
+elem_min: 1
+elem_max: 1000000000

@@ -1,0 +1,11 @@
+class_name: Solution
+method: countCoveredPoints
+params:
+  - name: starts
+    type: List[int]
+  - name: ends
+    type: List[int]
+  - name: k
+    type: int
+return_type: int
+compare: exact

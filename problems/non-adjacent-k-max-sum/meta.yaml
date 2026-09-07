@@ -1,0 +1,17 @@
+slug: non-adjacent-k-max-sum
+title: K-非相邻子序列最大和
+difficulty: hard
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - dp
+  - array
+  - greedy
+n_min: 1
+n_max: 500
+elem_min: 1
+elem_max: 1000000
+param_bounds:
+  k:
+    min: 1
+    max: 500

@@ -1,0 +1,13 @@
+slug: square-core-pairs
+title: 完全平方积对数
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - array
+  - hash
+  - math
+n_min: 1
+n_max: 100000
+elem_min: 1
+elem_max: 1000000

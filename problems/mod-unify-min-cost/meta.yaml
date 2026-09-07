@@ -1,0 +1,17 @@
+slug: mod-unify-min-cost
+title: 统一余数最少操作次数
+difficulty: medium
+time_limit_ms: 2000
+memory_limit_mb: 256
+tags:
+  - array
+  - greedy
+  - math
+n_min: 1
+n_max: 100000
+elem_min: 1
+elem_max: 1000000000
+param_bounds:
+  k:
+    min: 1
+    max: 1000

@@ -1,0 +1,9 @@
+class_name: Solution
+method: minOpsToEqualRemainder
+params:
+  - name: nums
+    type: List[int]
+  - name: k
+    type: int
+return_type: int
+compare: exact
