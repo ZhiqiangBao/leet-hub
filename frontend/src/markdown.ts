@@ -38,8 +38,8 @@ function innerFromInlineFence(rest: string): string | null {
   if (close < 0) return null;
   let inner = body.slice(0, close).trim();
   const lang = inner.match(/^([A-Za-z][\w+-]*)(?:\s+([\s\S]+))?$/);
-  const rest = (lang?.[2] || "").trim();
-  if (rest && lang && FENCE_LANG_TOKEN.test(lang[1])) inner = rest;
+  const afterLang = (lang?.[2] || "").trim();
+  if (afterLang && lang && FENCE_LANG_TOKEN.test(lang[1])) inner = afterLang;
   return compactValue(inner);
 }
 
