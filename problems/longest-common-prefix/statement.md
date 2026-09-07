@@ -6,14 +6,20 @@
 
 ## 示例
 
-输入：`strs = ["flower","flow","flight"]`  
-输出：`"fl"`
+### 示例 1
 
-输入：`strs = ["dog","racecar","car"]`  
-输出：`""`
+输入：["flower", "flow", "flight"]  
+输出："fl"  
 
-输入：`strs = ["a"]`  
-输出：`"a"`
+### 示例 2
+
+输入：["dog", "racecar", "car"]  
+输出：""  
+
+### 示例 3
+
+输入：["a"]  
+输出："a"  
 
 ## 约束
 

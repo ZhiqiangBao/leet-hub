@@ -6,7 +6,7 @@
 
 | 行名 | 路径 | 谁写 |
 |---|---|---|
-| 题目 | `problems/<slug>/`（`meta.yaml`、`statement.md`、`signature.yaml`、`starter/`） | `author` 写题面与签名；`mcp__leet__fix_format` 改示例排版、补 bounds、写 `starter/` |
+| 题目 | `problems/<slug>/`（`meta.yaml`、`statement.md`、`signature.yaml`、`starter/`） | `author` 写题面与签名；`mcp__leet__fix_format` 改题面结构与示例排版、补 bounds、写 `starter/` |
 | 已出题表 | `problems/catalog.md` | 主编 **commit 前** 调 `mcp__leet__write_catalog` |
 | 参考解（oracle） | `.qwen/tmp/<slug>_ref.py`（`def solve(*args)`） | `oracle`；`dump` / `mcp__leet__fill_expected` 填 expected |
 | 答题者解 | `.qwen/tmp/<slug>_solve2.py` | `solver`；`mcp__leet__check_tests` 对照 expected |

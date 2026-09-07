@@ -32,7 +32,7 @@ disallowedTools:
 4. `read_file` `rules/files.md`
 5. `read_file` `rules/judge.md`
 
-不要读其它 `problems/` 目录。目录与签名见 R2。示例排版不要手调，写完调 `mcp__leet__fix_format`。
+不要读其它 `problems/` 目录。目录与签名见 R2。题意用段落写，不要写 `## 题目描述` / `## 参数` / `## 返回值` / `## 输入格式`。结构与示例排版不要手调，写完调 `mcp__leet__fix_format`。
 
 ## 硬预算
 
@@ -47,7 +47,7 @@ disallowedTools:
 - `problems/<slug>/meta.yaml`（含 `n_min`/`n_max`/`elem_min`/`elem_max`）、`statement.md`、`signature.yaml`
 - **不要** `write_file` `starter/`。`signature.yaml` 与 `statement.md` 落盘后立刻调 `mcp__leet__fix_format`（参数 `slug`）。
 
-看返回 JSON 的 `ok`、`examples.changed`、`examples.edits`、`bounds_notes`、`issues`。`edits` 会写明改了第几条输入、是否从键值改成位置参数。`bounds_notes` 如 `hi using elem_min/elem_max` 表示该参数正按元素界判定；`issues` 含 `param_bounds key … not recognized` 则字段没被认到，不要当已写上。工具会：补上缺的 `n_min`/`n_max`/`elem_min`/`elem_max`（默认值）、把键值示例改成位置参数、生成空 starter。不要手改 starter，不要手调围栏和冒号。不要把 starter 或题面正文贴进对话。改了签名或示例必须再调。
+看返回 JSON 的 `ok`、`examples.changed`、`examples.edits`、`bounds_notes`、`issues`。`edits` 会写明改了第几条输入、是否从键值改成位置参数。`bounds_notes` 如 `hi using elem_min/elem_max` 表示该参数正按元素界判定；`issues` 含 `param_bounds key … not recognized` 则字段没被认到，不要当已写上。工具会：去掉多余小节（保留题意正文）、把题面收成「题意 + 示例 + 约束」、补上缺的 `n_min`/`n_max`/`elem_min`/`elem_max`（默认值）、把键值示例改成位置参数、生成空 starter。不要手改 starter，不要手调围栏、冒号和小标题。不要把 starter 或题面正文贴进对话。改了签名或示例必须再调。
 
 `meta.yaml` 写出与约束一致的 `n_min`/`n_max`/`elem_min`/`elem_max`（不要依赖缺省去碰运气）。long 字段把 `elem_max` 提到 int64，或用 `param_bounds`（嵌套 `hi: {min, max}`，扁平 `hi_min`/`hi_max` 也可以）。示例输入写成位置参数：`[1, 3, 2, 4], 5`，不要 `nums = …, hi = …`。
 

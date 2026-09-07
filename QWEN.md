@@ -51,7 +51,7 @@
 
 | 工具 | 谁用 | 作用 |
 |---|---|---|
-| `mcp__leet__fix_format` | `author`、`quality` | 键值示例改成位置参数；`edits` / `bounds_notes` |
+| `mcp__leet__fix_format` | `author`、`quality` | 统一题面结构；键值示例改成位置参数；`edits` / `bounds_notes` |
 | `mcp__leet__statement_check` | `quality`（`skip_ref=true`）；`oracle`（默认 `_ref.py`）；`solver`（`ref=solve2`）；主编仅兜底时 `skip_ref=true` | 按签名绑定示例；`import_error` / `call_error` / `value_mismatch` |
 | `mcp__leet__clone_check` | `quality` | 原创检索 hits |
 | `mcp__leet__run_gen` | `tests` | dump 摘要：`issues` / `bounds` / `overlay` / `bound_hits` |
@@ -80,7 +80,7 @@
 
 ## 派工
 
-任务里写：**项目根绝对路径**、`slug`、难度、标签、一句话题意、**答案上界（数字）**。指定 `subagent_type`。不要 fork、不要 inherit。默认按 int32 出题；仅当上界会超 \(2^{31}-1\) 且要保留该规模时，派工写明对应字段 yaml `long`（不要每题都 long，不要写 `int64` / 「请用能容纳的整型」）。答案上界只给 author 定 `int`/`long`，不要把「通道」抄进题面；题面约束仍须写 `n` 与值域。给 `author` 加：写完调 `mcp__leet__fix_format`（不要手调示例排版、不要手写 starter）；`meta.yaml` 写清 `n_min`/`n_max`/`elem_min`/`elem_max`（与约束一致；long 字段用嵌套 `param_bounds: {hi: {min, max}}` 或扁平 `hi_min`/`hi_max`，或把 `elem_max` 提到 int64）；示例输入用位置参数；解释只写哪些计入/不计入，不要写解法；回执必须带每条示例的逐项/逐窗口手算（不要贴完整数组）。`read_file` 不吃相对路径；所有子代理用派工里的绝对路径拼接，禁止猜盘符或旧项目路径。
+任务里写：**项目根绝对路径**、`slug`、难度、标签、一句话题意、**答案上界（数字）**。指定 `subagent_type`。不要 fork、不要 inherit。默认按 int32 出题；仅当上界会超 \(2^{31}-1\) 且要保留该规模时，派工写明对应字段 yaml `long`（不要每题都 long，不要写 `int64` / 「请用能容纳的整型」）。答案上界只给 author 定 `int`/`long`，不要把「通道」抄进题面；题面约束仍须写 `n` 与值域。给 `author` 加：写完调 `mcp__leet__fix_format`（不要手调题面结构与示例排版、不要手写 starter）；`meta.yaml` 写清 `n_min`/`n_max`/`elem_min`/`elem_max`（与约束一致；long 字段用嵌套 `param_bounds: {hi: {min, max}}` 或扁平 `hi_min`/`hi_max`，或把 `elem_max` 提到 int64）；示例输入用位置参数；解释只写哪些计入/不计入，不要写解法；回执必须带每条示例的逐项/逐窗口手算（不要贴完整数组）。`read_file` 不吃相对路径；所有子代理用派工里的绝对路径拼接，禁止猜盘符或旧项目路径。
 
 `author` 返回后：**直接派 `quality`**。不要主编调 `mcp__leet__statement_check`、不要主编审题面。质量只看 `quality` 的结论。
 
@@ -98,7 +98,7 @@
 
 ## 每题
 
-1. `author`：题面、签名、示例、`meta.yaml` 约束四字段；starter 与示例排版由 `mcp__leet__fix_format` 生成/改写。不写 `_ref.py`、不写 jsonl。
+1. `author`：题面、签名、示例、`meta.yaml` 约束四字段；starter 与题面结构由 `mcp__leet__fix_format` 生成/改写。不写 `_ref.py`、不写 jsonl。
 2. `quality`：只做质量（不重题、不抄袭、无矛盾、**手算示例是否符合题意**、签名/约束/starter、**文体**：解法进解释、评测黑话、下标/元素混说）。机检过了仍可能 `[题意]`/`[约束]` 不通过。用 `mcp__leet__clone_check` 的 hits 核原创；索引缺失才 `[原创] 未核`。不写测例、不写 oracle、不跑脚本来验示例对错。`[原创]`/`[重题]` 不通过 → 主编换题；其它不通过 → `author` 返工后再 `quality`；未核 → 重派 `quality` 或交给用户。
 3. `oracle`：写 `.qwen/tmp/<slug>_ref.py`（其中 `def solve`），调 `mcp__leet__statement_check` 对题面示例。不对只准再写一次；仍不对停手，由主编新派（至多两轮）。
 4. `solver`：与 `oracle` 并行，只读题面写 `.qwen/tmp/<slug>_solve2.py`，调 `mcp__leet__statement_check` 且 `ref=solve2`。不对只准再写一次；仍不对停手，由主编新派（至多两轮）。不对拍 `_ref.py`、不读 jsonl。

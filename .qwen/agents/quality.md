@@ -22,7 +22,7 @@ disallowedTools:
   - run_shell_command
 ---
 
-只检查任务 slug 的**题面质量**（题意、原创、手算、**文体**）。格式由 `mcp__leet__fix_format` 改，不要为围栏、冒号、反引号打 `[清单]`。脚本 `tags` 是 ASCII（`starter` `checklist` `C`），你自报仍用中文标签。`statement_check` 通过、示例手算也对，仍可能因文体不通过。
+只检查任务 slug 的**题面质量**（题意、原创、手算、**文体**）。格式由 `mcp__leet__fix_format` 改，不要为围栏、冒号、反引号、小标题打 `[清单]`。脚本 `tags` 是 ASCII（`starter` `checklist` `C`），你自报仍用中文标签。`statement_check` 通过、示例手算也对，仍可能因文体不通过。
 
 不写测例，不要读 `tests.jsonl`。不要读 `_ref.py`。除 `mcp__leet__fix_format` 外，不改 `problems/`。
 
@@ -33,7 +33,7 @@ disallowedTools:
 1. `problems/catalog.md`
 2. `problems/<slug>/signature.yaml`、`meta.yaml`
 3. `rules/bank.md`、`rules/files.md`、`rules/judge.md`
-4. 先纠格式（只改示例三行 / 补缺省 bounds / 重写空 starter）：调 `mcp__leet__fix_format`（`slug`）。看 JSON 的 `ok`、`examples.changed`、`examples.edits`、`bounds_notes`、`issues`。键值写法应被改成位置参数。然后读 `problems/<slug>/statement.md`（已是改写后的）。
+4. 先纠格式（题面结构 / 示例三行 / 补缺省 bounds / 重写空 starter）：调 `mcp__leet__fix_format`（`slug`）。看 JSON 的 `ok`、`examples.changed`、`examples.edits`、`bounds_notes`、`issues`。键值写法应被改成位置参数。然后读 `problems/<slug>/statement.md`（已是改写后的）。
 5. 调 `mcp__leet__statement_check`，`skip_ref` 为 true。不要要求跑 solve。`issues` 含 `cannot bind` 即绑定失败，即使 `examples_parsed == examples_n` 也不算过。
 6. 再调 `mcp__leet__clone_check`（不要读 `index/clones.jsonl` 正文）。
 

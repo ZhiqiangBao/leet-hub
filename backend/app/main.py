@@ -73,7 +73,7 @@ if FRONTEND_DIST.is_dir():
             return FileResponse(file_path)
         index = FRONTEND_DIST / "index.html"
         if index.is_file():
-            return FileResponse(index)
+            return FileResponse(index, headers={"Cache-Control": "no-cache"})
         return JSONResponse({"detail": "frontend not built"}, status_code=404)
 
 

@@ -1,4 +1,4 @@
-"""Fix problem-file format: example lines, missing meta bounds, starters. Does not judge 题意."""
+"""Fix problem-file format: statement layout, example lines, missing meta bounds, starters. Does not judge 题意."""
 from __future__ import annotations
 
 import argparse
